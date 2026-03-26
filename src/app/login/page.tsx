@@ -33,7 +33,8 @@ export default function LoginPage() {
 
     const role = profile?.role
     if (role === 'superadmin') router.push('/admin')
-    else router.push('/dashboard')
+    else if (role === 'brf_admin') router.push('/dashboard')
+    else router.push('/admin') // fallback om profil saknas
   }
 
   return (
