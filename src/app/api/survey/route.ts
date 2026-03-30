@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 
   // Spara alla svar
   const answerRows = Object.entries(answers).map(([question_code, value]) => ({
-    survey_id: surveyId_final,
+    survey_id: surveyId,
     question_code,
     answer_numeric: typeof value === 'number' ? value : null,
     answer_text: typeof value === 'string' ? value : null,
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 
   // Spara KPI-resultat
   const kpiRows = kpis.map(k => ({
-    survey_id: surveyId_final,
+    survey_id: surveyId,
     kpi_number: k.id,
     kpi_name: k.name,
     value: k.value,
@@ -100,5 +100,5 @@ export async function POST(req: NextRequest) {
 
   await supabaseAdmin.from('kpi_results').insert(kpiRows)
 
-  return NextResponse.json({ surveyId: surveyId_final, kpis, answers })
+  return NextResponse.json({ surveyId: surveyId, kpis, answers })
 }
