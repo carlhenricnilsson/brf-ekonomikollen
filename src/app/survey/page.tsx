@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 type Answers = Record<string, string | number | boolean>
 
@@ -147,9 +147,23 @@ function FormattedNumberInput({
 
 export default function SurveyPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Answers>({})
   const [loading, setLoading] = useState(false)
+  const [brfName, setBrfName] = useState('')
+  const token = searchParams.get('token')
+
+  useEffect(() => {
+    // Hämta BRF-namn om token finns
+    async function fetchSurveyInfo() {
+      if (!token) return
+      const res = await fetch(`/api/survey-info?token=${token}`)
+      const data = await res.json()
+      if (data.brf_name) setBrfName(data.brf_name)
+    }
+    fetchSurveyInfo()
+  }, [token])
 
   const section = SECTIONS[step]
   const progress = Math.round(((step) / SECTIONS.length) * 100)
@@ -178,7 +192,7 @@ export default function SurveyPage() {
       const res = await fetch('/api/survey', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ answers, token }),
       })
       const data = await res.json()
       if (data.surveyId) {

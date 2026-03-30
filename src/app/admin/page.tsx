@@ -8,6 +8,8 @@ type Survey = {
   id: string
   survey_year: number
   status: string
+  brf_name: string | null
+  token: string
   created_at: string
   kpi_results: { kpi_number: number; value: number; traffic_light: string }[]
 }
@@ -17,6 +19,10 @@ export default function AdminPage() {
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState('')
+  const [showCreateLink, setShowCreateLink] = useState(false)
+  const [newBrfName, setNewBrfName] = useState('')
+  const [createdLink, setCreatedLink] = useState('')
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => {
     checkAuth()
@@ -45,6 +51,22 @@ export default function AdminPage() {
 
     setSurveys(data ?? [])
     setLoading(false)
+  }
+
+  async function createSurveyLink() {
+    setCreating(true)
+    const res = await fetch('/api/create-survey-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brf_name: newBrfName, survey_year: new Date().getFullYear() }),
+    })
+    const data = await res.json()
+    if (data.token) {
+      const baseUrl = window.location.origin
+      setCreatedLink(`${baseUrl}/survey?token=${data.token}`)
+      fetchSurveys()
+    }
+    setCreating(false)
   }
 
   async function handleLogout() {
@@ -81,7 +103,66 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold">Alla enkäter</h1>
             <p className="text-white/40 text-sm mt-1">{surveys.length} enkäter totalt</p>
           </div>
+          <button
+            onClick={() => { setShowCreateLink(true); setCreatedLink('') }}
+            className="bg-blue-500 hover:bg-blue-400 text-white font-medium px-5 py-2.5 rounded-xl text-sm transition-colors"
+          >
+            + Skapa enkätlänk
+          </button>
         </div>
+
+        {/* Skapa länk-modal */}
+        {showCreateLink && (
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">
+            <h2 className="font-bold text-lg mb-4">Skapa ny enkätlänk</h2>
+            {!createdLink ? (
+              <>
+                <label className="block text-sm text-white/60 mb-2">BRF-namn (valfritt)</label>
+                <input
+                  type="text"
+                  value={newBrfName}
+                  onChange={e => setNewBrfName(e.target.value)}
+                  placeholder="T.ex. BRF Solgläntan"
+                  className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white mb-4 focus:outline-none focus:border-blue-400"
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={createSurveyLink}
+                    disabled={creating}
+                    className="bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-white font-medium px-6 py-2.5 rounded-xl text-sm transition-colors"
+                  >
+                    {creating ? 'Skapar...' : 'Generera länk'}
+                  </button>
+                  <button
+                    onClick={() => setShowCreateLink(false)}
+                    className="text-white/40 hover:text-white text-sm px-4 py-2.5 transition-colors"
+                  >
+                    Avbryt
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div>
+                <p className="text-green-400 text-sm font-medium mb-3">✅ Länk skapad! Skicka denna till BRF:en:</p>
+                <div className="bg-black/30 border border-white/10 rounded-xl p-4 flex items-center justify-between gap-4 mb-4">
+                  <span className="text-blue-300 text-sm break-all">{createdLink}</span>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(createdLink)}
+                    className="shrink-0 bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-2 rounded-lg transition-colors"
+                  >
+                    Kopiera
+                  </button>
+                </div>
+                <button
+                  onClick={() => { setShowCreateLink(false); setCreatedLink(''); setNewBrfName('') }}
+                  className="text-white/40 hover:text-white text-sm transition-colors"
+                >
+                  Stäng
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Statistik */}
         <div className="grid grid-cols-3 gap-4 mb-10">
@@ -126,9 +207,9 @@ export default function AdminPage() {
                       {survey.survey_year}
                     </div>
                     <div>
-                      <p className="font-medium">Enkät {survey.survey_year}</p>
+                      <p className="font-medium">{survey.brf_name || `Enkät ${survey.survey_year}`}</p>
                       <p className="text-white/30 text-xs mt-0.5">
-                        {new Date(survey.created_at).toLocaleDateString('sv-SE')}
+                        {survey.survey_year} · {new Date(survey.created_at).toLocaleDateString('sv-SE')} · <span className={survey.status === 'completed' ? 'text-green-400' : 'text-yellow-400'}>{survey.status === 'completed' ? 'Genomförd' : 'Väntar'}</span>
                       </p>
                     </div>
                   </div>

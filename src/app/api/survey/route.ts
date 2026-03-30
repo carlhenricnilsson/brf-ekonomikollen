@@ -40,27 +40,46 @@ function calculateKPIs(a: Record<string, number | string | boolean>) {
 }
 
 export async function POST(req: NextRequest) {
-  const { answers } = await req.json()
+  const { answers, token } = await req.json()
   const kpis = calculateKPIs(answers)
 
-  // Spara survey i databasen
-  const { data: survey, error: surveyError } = await supabaseAdmin
-    .from('surveys')
-    .insert({ survey_year: Number(answers.A1_year) || new Date().getFullYear(), status: 'completed' })
-    .select()
-    .single()
+  let surveyId: string
 
-  if (surveyError) {
-    console.error('Survey insert error:', surveyError)
-    // Returnera ändå resultat även om sparandet misslyckas
-    return NextResponse.json({ surveyId: crypto.randomUUID(), kpis, answers })
+  if (token) {
+    // Använd befintlig enkät kopplad till token
+    const { data: existing } = await supabaseAdmin
+      .from('surveys')
+      .select('id')
+      .eq('token', token)
+      .single()
+
+    if (existing) {
+      surveyId = existing.id
+      await supabaseAdmin
+        .from('surveys')
+        .update({ status: 'completed', survey_year: Number(answers.A1_year) || new Date().getFullYear() })
+        .eq('id', surveyId)
+    } else {
+      return NextResponse.json({ error: 'Ogiltig enkätlänk' }, { status: 400 })
+    }
+  } else {
+    // Skapa ny enkät (direktflöde utan token)
+    const { data: survey, error: surveyError } = await supabaseAdmin
+      .from('surveys')
+      .insert({ survey_year: Number(answers.A1_year) || new Date().getFullYear(), status: 'completed' })
+      .select()
+      .single()
+
+    if (surveyError || !survey) {
+      console.error('Survey insert error:', surveyError)
+      return NextResponse.json({ surveyId: crypto.randomUUID(), kpis, answers })
+    }
+    surveyId = survey.id
   }
-
-  const surveyId = survey.id
 
   // Spara alla svar
   const answerRows = Object.entries(answers).map(([question_code, value]) => ({
-    survey_id: surveyId,
+    survey_id: surveyId_final,
     question_code,
     answer_numeric: typeof value === 'number' ? value : null,
     answer_text: typeof value === 'string' ? value : null,
@@ -71,7 +90,7 @@ export async function POST(req: NextRequest) {
 
   // Spara KPI-resultat
   const kpiRows = kpis.map(k => ({
-    survey_id: surveyId,
+    survey_id: surveyId_final,
     kpi_number: k.id,
     kpi_name: k.name,
     value: k.value,
@@ -81,5 +100,5 @@ export async function POST(req: NextRequest) {
 
   await supabaseAdmin.from('kpi_results').insert(kpiRows)
 
-  return NextResponse.json({ surveyId, kpis, answers })
+  return NextResponse.json({ surveyId: surveyId_final, kpis, answers })
 }
