@@ -104,22 +104,22 @@ function BenchmarkBar({ kpi, benchmark }: { kpi: KPI; benchmark: Benchmark }) {
       </div>
 
       {/* Etiketter */}
-      <div className="grid grid-cols-4 text-xs text-center gap-2">
+      <div className="grid grid-cols-4 text-center gap-2 mt-1">
         <div>
-          <div className="text-white/30">25:e percentil</div>
-          <div className="text-white/60 font-medium">{fmt2(benchmark.p25)}</div>
+          <div className="text-white/50 text-xs mb-0.5">25:e percentil</div>
+          <div className="text-white/80 text-sm font-semibold">{fmt2(benchmark.p25)}</div>
         </div>
         <div>
-          <div className="text-white/30">Median</div>
-          <div className="text-white/70 font-semibold">{fmt2(benchmark.median)}</div>
+          <div className="text-white/50 text-xs mb-0.5">Median</div>
+          <div className="text-white font-bold text-sm">{fmt2(benchmark.median)}</div>
         </div>
         <div>
-          <div className="text-white/30">75:e percentil</div>
-          <div className="text-white/60 font-medium">{fmt2(benchmark.p75)}</div>
+          <div className="text-white/50 text-xs mb-0.5">75:e percentil</div>
+          <div className="text-white/80 text-sm font-semibold">{fmt2(benchmark.p75)}</div>
         </div>
         <div>
-          <div className={`${c.text} font-bold`}>Er BRF</div>
-          <div className={`${c.text} font-bold`}>{fmt2(kpi.value)}</div>
+          <div className={`${c.text} text-xs font-bold mb-0.5`}>Er BRF</div>
+          <div className={`${c.text} text-sm font-bold`}>{fmt2(kpi.value)}</div>
         </div>
       </div>
     </div>
@@ -233,7 +233,7 @@ export default function ResultsPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
-        <span className="text-xl font-bold">Ekonomi<span className="text-blue-400">kollen</span></span>
+        <span className="text-xl font-bold">BRF-Ekonomi<span className="text-blue-400">kollen</span></span>
         <Link href="/survey" className="text-sm text-white/50 hover:text-white transition-colors">Ny enkät</Link>
       </div>
 
@@ -279,7 +279,6 @@ export default function ResultsPage() {
                       <div className="flex items-center gap-2 mt-1">
                         <div className={`w-2.5 h-2.5 rounded-full ${c.dot}`} />
                         <p className={`text-sm font-semibold ${c.text}`}>{c.label}</p>
-                        <span className="text-white/30 text-xs">· hover för info</span>
                       </div>
                     </div>
                   </div>
