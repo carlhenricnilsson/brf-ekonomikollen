@@ -54,6 +54,78 @@ function MarkdownText({ text }: { text: string }) {
   )
 }
 
+type Benchmark = { p25: number; median: number; p75: number; unit: string; source: string; count: number }
+
+function BenchmarkBar({ kpi, benchmark }: { kpi: KPI; benchmark: Benchmark }) {
+  const fmt2 = (v: number) => kpi.unit === '%' ? `${v.toFixed(1)}%` : `${Math.round(v).toLocaleString('sv-SE')}`
+
+  // Beräkna position på skalan (0-100%)
+  const allVals = [benchmark.p25 * 0.5, benchmark.p75 * 1.8, kpi.value]
+  const min = Math.min(...allVals)
+  const max = Math.max(...allVals)
+  const range = max - min || 1
+
+  const pos  = (v: number) => Math.min(98, Math.max(2, ((v - min) / range) * 100))
+  const myPos  = pos(kpi.value)
+  const p25Pos = pos(benchmark.p25)
+  const medPos = pos(benchmark.median)
+  const p75Pos = pos(benchmark.p75)
+  const barLeft = Math.min(p25Pos, p75Pos)
+  const barWidth = Math.abs(p75Pos - p25Pos)
+
+  const c = LIGHT_COLORS[kpi.light]
+
+  return (
+    <div className="mt-4 pt-4 border-t border-white/10">
+      <div className="flex items-center justify-between mb-3 text-xs text-white/40">
+        <span>Jämförelse: <span className="text-white/60">{benchmark.source}</span></span>
+        <span>{benchmark.count > 0 ? `${benchmark.count} BRF:er i databasen` : ''}</span>
+      </div>
+
+      {/* Stapeldiagram */}
+      <div className="relative h-8 mb-3">
+        {/* Bakgrund */}
+        <div className="absolute inset-0 bg-white/5 rounded-lg" />
+        {/* P25–P75 intervall */}
+        <div
+          className="absolute top-0 bottom-0 bg-white/10 rounded"
+          style={{ left: `${barLeft}%`, width: `${barWidth}%` }}
+        />
+        {/* Median-linje */}
+        <div
+          className="absolute top-1 bottom-1 w-0.5 bg-white/50 rounded"
+          style={{ left: `${medPos}%` }}
+        />
+        {/* Din BRF */}
+        <div
+          className={`absolute top-0.5 bottom-0.5 w-1.5 rounded-full ${c.dot} shadow-lg`}
+          style={{ left: `${myPos}%`, transform: 'translateX(-50%)' }}
+        />
+      </div>
+
+      {/* Etiketter */}
+      <div className="grid grid-cols-4 text-xs text-center gap-2">
+        <div>
+          <div className="text-white/30">25:e percentil</div>
+          <div className="text-white/60 font-medium">{fmt2(benchmark.p25)}</div>
+        </div>
+        <div>
+          <div className="text-white/30">Median</div>
+          <div className="text-white/70 font-semibold">{fmt2(benchmark.median)}</div>
+        </div>
+        <div>
+          <div className="text-white/30">75:e percentil</div>
+          <div className="text-white/60 font-medium">{fmt2(benchmark.p75)}</div>
+        </div>
+        <div>
+          <div className={`${c.text} font-bold`}>Er BRF</div>
+          <div className={`${c.text} font-bold`}>{fmt2(kpi.value)}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ResultsPage() {
   const params = useParams()
   const [kpis, setKpis] = useState<KPI[]>([])
@@ -63,6 +135,15 @@ export default function ResultsPage() {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
   const [hoveredKpi, setHoveredKpi] = useState<number | null>(null)
+  const [benchmarks, setBenchmarks] = useState<Record<number, Benchmark>>({})
+
+  useEffect(() => {
+    // Ladda benchmarks parallellt
+    fetch('/api/benchmarks')
+      .then(r => r.json())
+      .then(d => setBenchmarks(d.benchmarks ?? {}))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     async function loadResults() {
@@ -206,11 +287,16 @@ export default function ResultsPage() {
                     <p className="text-2xl font-bold text-white">{fmt(kpi.value, kpi.unit)}</p>
                   </div>
                 </div>
-                {/* Tooltip-innehåll */}
+                {/* Benchmark alltid synlig */}
+                {benchmarks[kpi.id] && (
+                  <BenchmarkBar kpi={kpi} benchmark={benchmarks[kpi.id]} />
+                )}
+
+                {/* Tooltip-info vid hover */}
                 {hoveredKpi === kpi.id && info && (
-                  <div className="mt-4 pt-4 border-t border-white/10">
-                    <p className="text-white/70 text-sm mb-2">{info.desc}</p>
-                    <p className="text-white/50 text-xs font-mono">{info.thresholds}</p>
+                  <div className="mt-3 pt-3 border-t border-white/10">
+                    <p className="text-white/70 text-sm mb-1">{info.desc}</p>
+                    <p className="text-white/40 text-xs font-mono">{info.thresholds}</p>
                   </div>
                 )}
               </div>
