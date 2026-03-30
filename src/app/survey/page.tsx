@@ -209,7 +209,7 @@ export default function SurveyPage() {
     <div className="min-h-screen bg-slate-950 text-white">
       {/* Header */}
       <div className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
-        <span className="text-xl font-bold">Ekonomi<span className="text-blue-400">kollen</span></span>
+        <span className="text-xl font-bold">BRF-Ekonomi<span className="text-blue-400">kollen</span></span>
         <span className="text-sm text-white/40">Sektion {step + 1} av {SECTIONS.length}</span>
       </div>
 

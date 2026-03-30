@@ -22,9 +22,13 @@ function calculateKPIs(a: Record<string, number | string | boolean>) {
   const kpi7 = A3 > 0 ? C1 / A3 : 0
 
   function light(kpiId: number, value: number) {
-    if (kpiId === 2) return value > 15000 ? 'red' : value >= 8000 ? 'yellow' : 'green'
-    if (kpiId === 3) return value > 25 ? 'red' : value >= 15 ? 'yellow' : 'green'
-    if (kpiId === 4) return value < 100 ? 'red' : value <= 200 ? 'yellow' : 'green'
+    if (kpiId === 1) return value > 1000 ? 'red' : value >= 800 ? 'yellow' : 'green'
+    if (kpiId === 2) return value > 15000 ? 'red' : value >= 5000 ? 'yellow' : 'green'
+    if (kpiId === 3) return value > 10 ? 'red' : value >= 5 ? 'yellow' : 'green'
+    if (kpiId === 4) return value < 130 ? 'red' : value <= 250 ? 'yellow' : 'green'
+    if (kpiId === 5) return value > 250 ? 'red' : value >= 175 ? 'yellow' : 'green'
+    if (kpiId === 6) return value > 1000 ? 'red' : value >= 700 ? 'yellow' : 'green'
+    if (kpiId === 7) return value > 15000 ? 'red' : value >= 5000 ? 'yellow' : 'green'
     return 'neutral'
   }
 

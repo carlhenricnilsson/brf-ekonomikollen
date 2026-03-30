@@ -15,6 +15,16 @@ const LIGHT_COLORS = {
   neutral: { bg: 'bg-white/5',       border: 'border-white/20',      dot: 'bg-blue-400',   text: 'text-blue-400',   label: 'Info' },
 }
 
+const KPI_INFO: Record<number, { desc: string; thresholds: string }> = {
+  1: { desc: 'Visar avgiftsnivån per kvm bostadsrättsyta. Nationellt snitt 2024: 784 kr/kvm.', thresholds: '🟢 <800  ·  🟡 800–1 000  ·  🔴 >1 000 kr/kvm' },
+  2: { desc: 'Föreningens räntebärande lån per kvm totalyta. Hög skuldsättning ökar känsligheten för räntehöjningar.', thresholds: '🟢 <5 000  ·  🟡 5 000–15 000  ·  🔴 >15 000 kr/kvm' },
+  3: { desc: 'Hur stor del av årsavgifterna som behöver höjas vid 1% ränteökning. Viktigaste riskindikator.', thresholds: '🟢 <5%  ·  🟡 5–10%  ·  🔴 >10%' },
+  4: { desc: 'Justerat resultat per kvm – föreningens förmåga att spara för framtida underhåll. Nationellt snitt 2024: 124 kr/kvm.', thresholds: '🟢 >250  ·  🟡 130–250  ·  🔴 <130 kr/kvm' },
+  5: { desc: 'Värme, el och vatten per kvm. Påverkas av byggnadsålder, geografiskt läge och uppvärmningsform.', thresholds: '🟢 <175  ·  🟡 175–250  ·  🔴 >250 kr/kvm' },
+  6: { desc: 'Som KPI 1 men räknat på hela ytan inkl. lokaler och garage. Ger rättvisare bild vid uthyrda lokaler.', thresholds: '🟢 <700  ·  🟡 700–1 000  ·  🔴 >1 000 kr/kvm' },
+  7: { desc: 'Föreningens lån per kvm bostadsrätt – den siffra som direkt påverkar era månadsavgifter. Nationellt snitt 2024: 7 191 kr/kvm.', thresholds: '🟢 <5 000  ·  🟡 5 000–15 000  ·  🔴 >15 000 kr/kvm' },
+}
+
 function fmt(value: number, unit: string) {
   if (unit === '%') return `${value.toFixed(1)}%`
   return `${Math.round(value).toLocaleString('sv-SE')} ${unit}`
@@ -52,6 +62,7 @@ export default function ResultsPage() {
   const [aiAnalysis, setAiAnalysis] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
+  const [hoveredKpi, setHoveredKpi] = useState<number | null>(null)
 
   useEffect(() => {
     async function loadResults() {
@@ -169,23 +180,39 @@ export default function ResultsPage() {
         <div className="space-y-4 mb-12">
           {kpis.map(kpi => {
             const c = LIGHT_COLORS[kpi.light]
+            const info = KPI_INFO[kpi.id]
             return (
-              <div key={kpi.id} className={`${c.bg} border ${c.border} rounded-xl p-5 flex items-center justify-between`}>
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl ${c.bg} border ${c.border} flex items-center justify-center shrink-0`}>
-                    <span className={`text-lg font-bold ${c.text}`}>{kpi.id}</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-white">{kpi.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className={`w-2 h-2 rounded-full ${c.dot}`} />
-                      <p className={`text-xs font-medium ${c.text}`}>{c.label}</p>
+              <div
+                key={kpi.id}
+                className={`${c.bg} border ${c.border} rounded-xl p-5 cursor-pointer transition-all duration-200 hover:scale-[1.01] hover:shadow-lg`}
+                onMouseEnter={() => setHoveredKpi(kpi.id)}
+                onMouseLeave={() => setHoveredKpi(null)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-11 h-11 rounded-xl ${c.bg} border-2 ${c.border} flex items-center justify-center shrink-0`}>
+                      <span className={`text-xl font-bold ${c.text}`}>{kpi.id}</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white text-base">{kpi.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className={`w-2.5 h-2.5 rounded-full ${c.dot}`} />
+                        <p className={`text-sm font-semibold ${c.text}`}>{c.label}</p>
+                        <span className="text-white/30 text-xs">· hover för info</span>
+                      </div>
                     </div>
                   </div>
+                  <div className="text-right shrink-0 ml-4">
+                    <p className="text-2xl font-bold text-white">{fmt(kpi.value, kpi.unit)}</p>
+                  </div>
                 </div>
-                <div className="text-right shrink-0 ml-4">
-                  <p className="text-2xl font-bold text-white">{fmt(kpi.value, kpi.unit)}</p>
-                </div>
+                {/* Tooltip-innehåll */}
+                {hoveredKpi === kpi.id && info && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <p className="text-white/70 text-sm mb-2">{info.desc}</p>
+                    <p className="text-white/50 text-xs font-mono">{info.thresholds}</p>
+                  </div>
+                )}
               </div>
             )
           })}
