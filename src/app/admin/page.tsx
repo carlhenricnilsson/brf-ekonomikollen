@@ -10,6 +10,7 @@ type Survey = {
   status: string
   brf_name: string | null
   token: string
+  version: number | null
   created_at: string
   kpi_results: { kpi_number: number; value: number; traffic_light: string }[]
 }
@@ -23,6 +24,9 @@ export default function AdminPage() {
   const [newBrfName, setNewBrfName] = useState('')
   const [createdLink, setCreatedLink] = useState('')
   const [creating, setCreating] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchYear, setSearchYear] = useState('')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   useEffect(() => {
     checkAuth()
@@ -72,6 +76,30 @@ export default function AdminPage() {
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/login')
+  }
+
+  const filteredSurveys = surveys.filter(s => {
+    const nameMatch = searchQuery === '' || (s.brf_name ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+    const yearMatch = searchYear === '' || String(s.survey_year) === searchYear
+    return nameMatch && yearMatch
+  })
+
+  const availableYears = [...new Set(surveys.map(s => s.survey_year))].sort((a, b) => b - a)
+
+  function copyLink(surveyId: string, token: string) {
+    const link = `${window.location.origin}/survey?token=${token}`
+    try {
+      navigator.clipboard.writeText(link)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = link
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    setCopiedId(surveyId)
+    setTimeout(() => setCopiedId(null), 2000)
   }
 
   const lightDot = (light: string) => {
@@ -192,6 +220,42 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Sökfält */}
+        {surveys.length > 0 && (
+          <div className="flex gap-3 mb-6">
+            <div className="relative flex-1">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Sök på BRF-namn..."
+                className="w-full bg-white/5 border border-white/20 rounded-xl pl-9 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-400 placeholder-white/30"
+              />
+            </div>
+            <select
+              value={searchYear}
+              onChange={e => setSearchYear(e.target.value)}
+              className="bg-white/5 border border-white/20 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-400"
+            >
+              <option value="">Alla år</option>
+              {availableYears.map(y => (
+                <option key={y} value={String(y)}>{y}</option>
+              ))}
+            </select>
+            {(searchQuery || searchYear) && (
+              <button
+                onClick={() => { setSearchQuery(''); setSearchYear('') }}
+                className="text-white/40 hover:text-white text-sm px-3 transition-colors"
+              >
+                Rensa
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Enkätlista */}
         {loading ? (
           <div className="text-white/30 text-center py-20">Laddar...</div>
@@ -200,9 +264,14 @@ export default function AdminPage() {
             <p className="text-lg mb-2">Inga enkäter ännu</p>
             <p className="text-sm">Enkäter visas här när BRF:er fyller i dem</p>
           </div>
+        ) : filteredSurveys.length === 0 ? (
+          <div className="text-center py-16 text-white/30">
+            <p className="text-lg mb-2">Inga träffar</p>
+            <p className="text-sm">Prova ett annat sökord eller år</p>
+          </div>
         ) : (
           <div className="space-y-3">
-            {surveys.map(survey => {
+            {filteredSurveys.map(survey => {
               const kpis = survey.kpi_results ?? []
               const reds = kpis.filter(k => k.traffic_light === 'red').length
               const yellows = kpis.filter(k => k.traffic_light === 'yellow').length
@@ -215,7 +284,12 @@ export default function AdminPage() {
                       {survey.survey_year}
                     </div>
                     <div>
-                      <p className="font-medium">{survey.brf_name || `Enkät ${survey.survey_year}`}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{survey.brf_name || `Enkät ${survey.survey_year}`}</p>
+                        {(survey.version ?? 1) > 1 && (
+                          <span className="text-xs bg-white/10 text-white/50 px-1.5 py-0.5 rounded">ver.{survey.version}</span>
+                        )}
+                      </div>
                       <p className="text-white/30 text-xs mt-0.5">
                         {survey.survey_year} · {new Date(survey.created_at).toLocaleDateString('sv-SE')} · <span className={survey.status === 'completed' ? 'text-green-400' : 'text-yellow-400'}>{survey.status === 'completed' ? 'Genomförd' : 'Väntar'}</span>
                       </p>
@@ -235,6 +309,14 @@ export default function AdminPage() {
                       {yellows > 0 && <span className="text-yellow-400">{yellows} bevaka</span>}
                       {reds > 0 && <span className="text-red-400">{reds} varning</span>}
                     </div>
+                    {survey.token && (
+                      <button
+                        onClick={() => copyLink(survey.id, survey.token)}
+                        className={`text-xs transition-colors ${copiedId === survey.id ? 'text-green-400' : 'text-white/40 hover:text-white'}`}
+                      >
+                        {copiedId === survey.id ? '✓ Kopierad' : 'Kopiera länk'}
+                      </button>
+                    )}
                     <button
                       onClick={() => router.push(`/results/${survey.id}`)}
                       className="text-xs text-white/40 hover:text-white transition-colors"

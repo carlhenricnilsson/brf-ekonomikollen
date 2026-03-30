@@ -136,6 +136,8 @@ export default function ResultsPage() {
   const [aiError, setAiError] = useState('')
   const [hoveredKpi, setHoveredKpi] = useState<number | null>(null)
   const [benchmarks, setBenchmarks] = useState<Record<number, Benchmark>>({})
+  const [surveyMeta, setSurveyMeta] = useState<{ brf_name: string | null; survey_year: number; version: number } | null>(null)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   useEffect(() => {
     // Ladda benchmarks parallellt
@@ -148,6 +150,14 @@ export default function ResultsPage() {
   useEffect(() => {
     async function loadResults() {
       const surveyId = params.surveyId as string
+
+      // Hämta alltid survey-metadata (brf_name, year, version)
+      const { data: surveyRow } = await supabase
+        .from('surveys')
+        .select('brf_name, survey_year, version')
+        .eq('id', surveyId)
+        .single()
+      if (surveyRow) setSurveyMeta(surveyRow)
 
       // Försök sessionStorage först (direkt efter enkät)
       const stored = sessionStorage.getItem('ekk_results')
@@ -201,6 +211,35 @@ export default function ResultsPage() {
   const yellowCount = kpis.filter(k => k.light === 'yellow').length
   const greenCount = kpis.filter(k => k.light === 'green').length
 
+  const surveyId = params.surveyId as string
+
+  function getReportName() {
+    if (!surveyMeta) return null
+    const name = surveyMeta.brf_name || 'Enkät'
+    const base = `${name} ${surveyMeta.survey_year}`
+    return (surveyMeta.version ?? 1) > 1 ? `${base} ver.${surveyMeta.version}` : base
+  }
+
+  async function downloadPdf() {
+    setPdfLoading(true)
+    try {
+      const res = await fetch(`/api/generate-pdf?surveyId=${surveyId}`)
+      if (!res.ok) { setPdfLoading(false); return }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const reportName = getReportName() || 'rapport'
+      a.download = `${reportName.replace(/\s+/g, '_')}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
   async function generateAnalysis() {
     setAiLoading(true)
     setAiError('')
@@ -234,11 +273,35 @@ export default function ResultsPage() {
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
         <span className="text-xl font-bold">BRF-Ekonomi<span className="text-blue-400">kollen</span></span>
-        <Link href="/survey" className="text-sm text-white/50 hover:text-white transition-colors">Ny enkät</Link>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={downloadPdf}
+            disabled={pdfLoading}
+            className="flex items-center gap-2 text-sm bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors font-medium"
+          >
+            {pdfLoading ? (
+              <>
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                Genererar PDF...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Ladda ner PDF
+              </>
+            )}
+          </button>
+          <Link href="/survey" className="text-sm text-white/50 hover:text-white transition-colors">Ny enkät</Link>
+        </div>
       </div>
 
       <div className="max-w-3xl mx-auto px-6 py-12">
-        <h1 className="text-3xl font-bold mb-2">Ert resultat</h1>
+        <h1 className="text-3xl font-bold mb-2">{getReportName() || 'Ert resultat'}</h1>
         <p className="text-white/50 mb-10">Baserat på BFNAR 2023:1 – de 7 obligatoriska nyckeltalen</p>
 
         {/* Sammanfattning */}
