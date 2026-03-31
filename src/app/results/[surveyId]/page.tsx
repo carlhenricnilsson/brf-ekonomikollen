@@ -35,9 +35,9 @@ function MarkdownText({ text }: { text: string }) {
   return (
     <div className="space-y-1.5 text-white/80 leading-snug">
       {lines.map((line, i) => {
-        // Hoppa över horisontella linjer (--- eller ***) och tabellseparatorer (|---|---|)
+        // Hoppa över horisontella linjer (--- eller ***) och alla tabellrader (|...|)
         if (/^[-*]{3,}$/.test(line.trim())) return null
-        if (/^\|[\s|:-]+\|$/.test(line.trim())) return null
+        if (line.trim().startsWith('|')) return null
         // Tomrad → liten luft
         if (line.trim() === '') return <div key={i} className="h-1" />
         // ### rubrik (KPI-rubriker)

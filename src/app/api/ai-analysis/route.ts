@@ -65,7 +65,13 @@ För varje rött eller gult nyckeltal: ge en konkret, handlingsorienterad rekomm
 ## Slutord
 En uppmuntrande men ärlig avslutning riktad till styrelsen.
 
-Använd ett professionellt men tillgängligt språk. Undvik onödig jargong. Skriv som om du presenterar för en styrelse som inte är ekonomer.`
+Använd ett professionellt men tillgängligt språk. Undvik onödig jargong. Skriv som om du presenterar för en styrelse som inte är ekonomer.
+
+VIKTIGA FORMATERINGSREGLER:
+- Använd ENDAST ## för rubriker (inte ### eller #)
+- Använd INTE horisontella linjer (---)
+- Använd INTE tabeller (|kolumn|kolumn|)
+- Använd enkel punktlista (- punkt) om du listar saker`
 
   try {
     const message = await client.messages.create({

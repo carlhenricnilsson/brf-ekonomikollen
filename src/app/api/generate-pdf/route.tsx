@@ -77,8 +77,20 @@ function getLabel(light: string) {
 
 function renderAIText(text: string) {
   return text.split('\n').map((line, i) => {
-    if (line.startsWith('## ')) return <Text key={i} style={s.aiH2}>{line.replace('## ', '')}</Text>
-    if (line.trim() === '')     return <Text key={i} style={{ fontSize: 3 }}> </Text>
+    // Filtrera bort --- och tabellseparatorer |---|---|
+    if (/^[-*]{3,}$/.test(line.trim()))       return null
+    if (/^\|[\s|:-]+\|$/.test(line.trim()))   return null
+    // Tomrad
+    if (line.trim() === '') return <Text key={i} style={{ fontSize: 2 }}> </Text>
+    // ### och ## rubriker
+    if (line.startsWith('### ')) return <Text key={i} style={[s.aiH2, { fontSize: 11 }]}>{line.replace(/^###\s+/, '')}</Text>
+    if (line.startsWith('## '))  return <Text key={i} style={s.aiH2}>{line.replace(/^##\s+/, '')}</Text>
+    if (line.startsWith('# '))   return <Text key={i} style={[s.aiH2, { fontSize: 14 }]}>{line.replace(/^#\s+/, '')}</Text>
+    // Punktlista
+    if (line.startsWith('- ') || line.startsWith('* '))
+      return <Text key={i} style={[s.aiBody, { marginLeft: 10 }]}>{'• ' + line.replace(/^[-*]\s+/, '').replace(/\*\*/g, '')}</Text>
+    // Tabellrader (innehåller | men är inte separator)
+    if (line.includes('|')) return null
     return <Text key={i} style={s.aiBody}>{line.replace(/\*\*/g, '')}</Text>
   })
 }
