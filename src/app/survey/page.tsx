@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 type Answers = Record<string, string | number | boolean>
@@ -145,7 +145,7 @@ function FormattedNumberInput({
   )
 }
 
-export default function SurveyPage() {
+function SurveyContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState(0)
@@ -336,5 +336,17 @@ export default function SurveyPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SurveyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <div className="text-white/40">Laddar enkät...</div>
+      </div>
+    }>
+      <SurveyContent />
+    </Suspense>
   )
 }
