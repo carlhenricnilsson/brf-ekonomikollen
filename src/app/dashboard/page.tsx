@@ -34,7 +34,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
-        <span className="text-xl font-bold">Ekonomi<span className="text-blue-400">kollen</span></span>
+        <span className="text-xl font-bold">BRF-Ekonomi<span className="text-blue-400">kollen</span></span>
         <div className="flex items-center gap-4">
           <span className="text-white/40 text-sm">{userEmail}</span>
           <button onClick={handleLogout} className="text-sm text-white/50 hover:text-white transition-colors">
@@ -43,7 +43,7 @@ export default function DashboardPage() {
         </div>
       </div>
       <div className="max-w-3xl mx-auto px-6 py-16 text-center">
-        <h1 className="text-2xl font-bold mb-4">Välkommen till Ekonomikollen</h1>
+        <h1 className="text-2xl font-bold mb-4">Välkommen till BRF-Ekonomikollen</h1>
         <p className="text-white/50 mb-8">Starta en ny enkät eller se era tidigare resultat.</p>
         <Link href="/survey"
           className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-8 py-3 rounded-xl transition-colors inline-block">

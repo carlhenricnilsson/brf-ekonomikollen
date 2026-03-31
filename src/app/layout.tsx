@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ekonomikollen – Förstå er BRF:s ekonomiska hälsa",
-  description: "Ekonomikollen beräknar automatiskt de 7 obligatoriska nyckeltalen för er bostadsrättsförening och ger er en tydlig analys med AI-drivna rekommendationer.",
+  title: "BRF-Ekonomikollen – Förstå er BRF:s ekonomiska hälsa",
+  description: "BRF-Ekonomikollen beräknar automatiskt de 7 obligatoriska nyckeltalen för er bostadsrättsförening och ger er en tydlig analys med AI-drivna rekommendationer.",
 };
 
 export default function RootLayout({

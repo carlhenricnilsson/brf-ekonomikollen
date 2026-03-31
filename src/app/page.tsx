@@ -6,7 +6,7 @@ export default function Home() {
 
       {/* Navbar */}
       <nav className="flex items-center justify-between px-8 py-5 border-b border-white/10">
-        <span className="text-2xl font-bold tracking-tight">Ekonomi<span className="text-blue-400">kollen</span></span>
+        <span className="text-2xl font-bold tracking-tight">BRF-Ekonomi<span className="text-blue-400">kollen</span></span>
         <div className="flex items-center gap-4">
           <Link href="/login" className="text-sm text-white/70 hover:text-white transition-colors">Logga in</Link>
           <Link href="/survey" className="bg-blue-500 hover:bg-blue-400 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">Starta enkät</Link>
@@ -20,7 +20,7 @@ export default function Home() {
           Förstå er BRF:s<br /><span className="text-blue-400">ekonomiska hälsa</span>
         </h1>
         <p className="text-lg text-white/60 max-w-2xl mx-auto mb-10">
-          Ekonomikollen beräknar automatiskt de 7 obligatoriska nyckeltalen för er bostadsrättsförening och ger er en tydlig analys med AI-drivna rekommendationer.
+          BRF-Ekonomikollen beräknar automatiskt de 7 obligatoriska nyckeltalen för er bostadsrättsförening och ger er en tydlig analys med AI-drivna rekommendationer.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/survey" className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors">Starta gratis enkät →</Link>
@@ -89,7 +89,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-8 text-center text-white/30 text-sm">
-        © 2026 Ekonomikollen · Governance at Work AB · governanceatwork.io
+        © 2026 BRF-Ekonomikollen · Governance at Work AB · governanceatwork.io
       </footer>
 
     </main>

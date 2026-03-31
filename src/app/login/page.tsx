@@ -41,7 +41,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <h1 className="text-2xl font-bold">Ekonomi<span className="text-blue-400">kollen</span></h1>
+          <h1 className="text-2xl font-bold">BRF-Ekonomi<span className="text-blue-400">kollen</span></h1>
           <p className="text-white/40 text-sm mt-2">Logga in för att fortsätta</p>
         </div>
 
