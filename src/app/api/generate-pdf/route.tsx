@@ -97,6 +97,7 @@ function renderAIText(text: string) {
 
 export async function GET(req: NextRequest) {
   const surveyId = req.nextUrl.searchParams.get('surveyId')
+  const include  = req.nextUrl.searchParams.get('include') ?? 'all'   // 'kpi' | 'ai' | 'all'
   if (!surveyId) return NextResponse.json({ error: 'Missing surveyId' }, { status: 400 })
 
   const [{ data: survey }, { data: kpis }, , { data: aiData }] = await Promise.all([
@@ -207,7 +208,7 @@ export async function GET(req: NextRequest) {
       </Page>
 
       {/* ── SIDA 2+: AI-analys ── */}
-      {aiAnalysis ? (
+      {aiAnalysis && include !== 'kpi' ? (
         <Page size="A4" style={s.aiPage}>
           <View style={s.header}>
             <Text style={s.logo}>BRF-Ekonomi<Text style={s.logoBlue}>kollen</Text></Text>

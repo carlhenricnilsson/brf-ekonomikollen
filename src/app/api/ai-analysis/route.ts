@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -12,7 +13,7 @@ function formatKPI(kpi: KPI) {
 }
 
 export async function POST(req: NextRequest) {
-  const { kpis, answers } = await req.json()
+  const { kpis, answers, surveyId } = await req.json()
 
   const redKPIs = kpis.filter((k: KPI) => k.light === 'red')
   const yellowKPIs = kpis.filter((k: KPI) => k.light === 'yellow')
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
   const feeIncrease = answers.G2_fee_increase
   const surveyYear = answers.A1_year
 
-  const prompt = `Du är en erfaren ekonomisk analytiker specialiserad på svenska bostadsrättsföreningar (BRF:er). 
+  const prompt = `Du är en erfaren ekonomisk analytiker specialiserad på svenska bostadsrättsföreningar (BRF:er).
 Du har fått in svar på Ekonomikollen – en enkät baserad på BFNAR 2023:1.
 
 NYCKELTAL FÖR VERKSAMHETSÅRET ${surveyYear}:
@@ -54,7 +55,7 @@ Analysera de nyckeltal som är röda eller gula. Förklara vad värdet betyder i
 ## Styrkor
 Lista 2–3 positiva aspekter av föreningens ekonomi.
 
-## Risker och rekommendationer  
+## Risker och rekommendationer
 För varje rött eller gult nyckeltal: ge en konkret, handlingsorienterad rekommendation. Vad bör styrelsen göra inom 1 år? Inom 3 år?
 
 ## Framtidsutsikter
@@ -75,12 +76,22 @@ VIKTIGA FORMATERINGSREGLER:
 
   try {
     const message = await client.messages.create({
-      model: 'claude-opus-4-5',
+      model: 'claude-opus-4-6',
       max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }],
     })
 
     const text = message.content[0].type === 'text' ? message.content[0].text : ''
+
+    // Spara till databasen om surveyId finns
+    if (surveyId) {
+      await supabaseAdmin.from('ai_analyses').insert({
+        survey_id: surveyId,
+        analysis_text: text,
+        model: 'claude-opus-4-6',
+      })
+    }
+
     return NextResponse.json({ analysis: text })
   } catch (error) {
     console.error('Claude API error:', error)
