@@ -23,7 +23,7 @@ export default function Home() {
           BRF-Ekonomikollen beräknar automatiskt de 7 obligatoriska nyckeltalen för er bostadsrättsförening och ger er en tydlig analys med AI-drivna rekommendationer.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/survey" className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors">Starta gratis enkät →</Link>
+          <Link href="/survey" className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors">Starta enkät →</Link>
           <Link href="#hur-det-fungerar" className="border border-white/20 hover:border-white/40 text-white/80 font-medium px-8 py-4 rounded-xl text-lg transition-colors">Hur det fungerar</Link>
         </div>
       </section>
