@@ -6,26 +6,17 @@ import { SurveyAnswer, KPIResult, KPISet, TrafficLight } from '@/types'
 
 // ── Trafikljus-gränser per KPI ───────────────────────────────
 
+// Samma trösklar som i api/survey/route.ts – enda källa till sanning
 function getTrafficLight(kpiId: number, value: number): TrafficLight {
   switch (kpiId) {
-    case 2: // Skuldsättning per kvm totalyta (kr/kvm)
-      if (value > 15000) return 'red'
-      if (value >= 8000) return 'yellow'
-      return 'green'
-
-    case 3: // Räntekänslighet (%)
-      if (value > 25) return 'red'
-      if (value >= 15) return 'yellow'
-      return 'green'
-
-    case 4: // Sparande per kvm (kr/kvm)
-      if (value < 100) return 'red'
-      if (value <= 200) return 'yellow'
-      return 'green'
-
-    // KPI 1, 5, 6, 7 – inga fasta gränser ännu (benchmarks används)
-    default:
-      return 'neutral'
+    case 1: return value > 1000 ? 'red' : value >= 800  ? 'yellow' : 'green'
+    case 2: return value > 15000 ? 'red' : value >= 5000 ? 'yellow' : 'green'
+    case 3: return value > 10   ? 'red' : value >= 5    ? 'yellow' : 'green'
+    case 4: return value < 130  ? 'red' : value <= 250  ? 'yellow' : 'green'
+    case 5: return value > 250  ? 'red' : value >= 175  ? 'yellow' : 'green'
+    case 6: return value > 1000 ? 'red' : value >= 700  ? 'yellow' : 'green'
+    case 7: return value > 15000 ? 'red' : value >= 5000 ? 'yellow' : 'green'
+    default: return 'neutral'
   }
 }
 
@@ -36,8 +27,12 @@ export function calculateKPIs(answers: SurveyAnswer): KPISet {
   // Mellanberäkning för KPI 4
   const adjusted_result = answers.F1_net_result + answers.E4_depreciation + answers.E5_planned_maintenance_costs
 
+  const A3 = answers.A3_brf_area_sqm || 0
+  const A4 = answers.A4_total_area_sqm || 0
+  const B1 = answers.B1_annual_fees || 0
+
   // KPI 1 – Årsavgift per kvm bostadsrätt
-  const kpi1_value = answers.B1_annual_fees / answers.A3_brf_area_sqm
+  const kpi1_value = A3 > 0 ? B1 / A3 : 0
   const kpi1: KPIResult = {
     id: 1,
     name_sv: 'Årsavgift per kvm bostadsrätt',
@@ -49,7 +44,7 @@ export function calculateKPIs(answers: SurveyAnswer): KPISet {
   }
 
   // KPI 2 – Skuldsättning per kvm totalyta
-  const kpi2_value = answers.C1_total_debt / answers.A4_total_area_sqm
+  const kpi2_value = A4 > 0 ? answers.C1_total_debt / A4 : 0
   const kpi2: KPIResult = {
     id: 2,
     name_sv: 'Skuldsättning per kvm totalyta',
@@ -61,7 +56,7 @@ export function calculateKPIs(answers: SurveyAnswer): KPISet {
   }
 
   // KPI 3 – Räntekänslighet
-  const kpi3_value = ((answers.C1_total_debt * 0.01) / answers.B1_annual_fees) * 100
+  const kpi3_value = B1 > 0 ? ((answers.C1_total_debt * 0.01) / B1) * 100 : 0
   const kpi3: KPIResult = {
     id: 3,
     name_sv: 'Räntekänslighet',
@@ -73,7 +68,7 @@ export function calculateKPIs(answers: SurveyAnswer): KPISet {
   }
 
   // KPI 4 – Sparande per kvm (justerat resultat)
-  const kpi4_value = adjusted_result / answers.A4_total_area_sqm
+  const kpi4_value = A4 > 0 ? adjusted_result / A4 : 0
   const kpi4: KPIResult = {
     id: 4,
     name_sv: 'Sparande per kvm',
@@ -85,7 +80,7 @@ export function calculateKPIs(answers: SurveyAnswer): KPISet {
   }
 
   // KPI 5 – Energikostnad per kvm
-  const kpi5_value = answers.D1_energy_costs / answers.A4_total_area_sqm
+  const kpi5_value = A4 > 0 ? answers.D1_energy_costs / A4 : 0
   const kpi5: KPIResult = {
     id: 5,
     name_sv: 'Energikostnad per kvm',
@@ -97,7 +92,7 @@ export function calculateKPIs(answers: SurveyAnswer): KPISet {
   }
 
   // KPI 6 – Årsavgift per kvm totalyta
-  const kpi6_value = answers.B1_annual_fees / answers.A4_total_area_sqm
+  const kpi6_value = A4 > 0 ? B1 / A4 : 0
   const kpi6: KPIResult = {
     id: 6,
     name_sv: 'Årsavgift per kvm totalyta',
@@ -109,7 +104,7 @@ export function calculateKPIs(answers: SurveyAnswer): KPISet {
   }
 
   // KPI 7 – Belåning per kvm bostadsrätt
-  const kpi7_value = answers.C1_total_debt / answers.A3_brf_area_sqm
+  const kpi7_value = A3 > 0 ? answers.C1_total_debt / A3 : 0
   const kpi7: KPIResult = {
     id: 7,
     name_sv: 'Belåning per kvm bostadsrätt',

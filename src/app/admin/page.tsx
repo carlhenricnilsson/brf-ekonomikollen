@@ -27,6 +27,15 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchYear, setSearchYear] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  // PDF-uppladdning
+  const [showPdfUpload, setShowPdfUpload] = useState(false)
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [pdfExtracting, setPdfExtracting] = useState(false)
+  const [pdfExtracted, setPdfExtracted] = useState<Record<string, unknown> | null>(null)
+  const [pdfConfidence, setPdfConfidence] = useState<Record<string, string> | null>(null)
+  const [pdfNotes, setPdfNotes] = useState('')
+  const [pdfError, setPdfError] = useState('')
+  const [pdfSubmitting, setPdfSubmitting] = useState(false)
 
   useEffect(() => {
     checkAuth()
@@ -87,6 +96,84 @@ export default function AdminPage() {
     router.push('/login')
   }
 
+  async function extractPdf() {
+    if (!pdfFile) return
+    setPdfExtracting(true)
+    setPdfError('')
+    setPdfExtracted(null)
+    try {
+      const form = new FormData()
+      form.append('pdf', pdfFile)
+      const res = await fetch('/api/extract-pdf', { method: 'POST', body: form })
+      const data = await res.json()
+      if (data.error) {
+        setPdfError(data.error)
+      } else {
+        setPdfExtracted(data.extracted)
+        setPdfConfidence(data.confidence)
+        setPdfNotes(data.notes || '')
+      }
+    } catch {
+      setPdfError('Kunde inte bearbeta PDF-filen')
+    } finally {
+      setPdfExtracting(false)
+    }
+  }
+
+  async function submitExtracted() {
+    if (!pdfExtracted) return
+    setPdfSubmitting(true)
+    try {
+      // Skapa enkätlänk först
+      const linkRes = await fetch('/api/create-survey-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brf_name: pdfExtracted.brf_name as string }),
+      })
+      const linkData = await linkRes.json()
+      if (!linkData.token) { setPdfError('Kunde inte skapa enkät'); return }
+
+      // Skicka in extraherade svar via survey-API (med token)
+      const answers: Record<string, unknown> = { ...pdfExtracted }
+      delete answers.brf_name
+      const surveyRes = await fetch('/api/survey', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers, token: linkData.token }),
+      })
+      const surveyData = await surveyRes.json()
+      if (surveyData.surveyId) {
+        // Stäng och navigera till resultatsidan
+        setShowPdfUpload(false)
+        setPdfFile(null)
+        setPdfExtracted(null)
+        setPdfConfidence(null)
+        setPdfNotes('')
+        fetchSurveys()
+        router.push(`/results/${surveyData.surveyId}`)
+      } else {
+        setPdfError('Kunde inte spara enkäten')
+      }
+    } catch {
+      setPdfError('Något gick fel vid inskickning')
+    } finally {
+      setPdfSubmitting(false)
+    }
+  }
+
+  // Konfidensindikator-färg
+  function confColor(level: string) {
+    if (level === 'high') return 'text-green-400'
+    if (level === 'medium') return 'text-yellow-400'
+    return 'text-red-400'
+  }
+
+  function confLabel(level: string) {
+    if (level === 'high') return 'Säker'
+    if (level === 'medium') return 'Osäker'
+    return 'Gissning'
+  }
+
   const filteredSurveys = surveys.filter(s => {
     const nameMatch = searchQuery === '' || (s.brf_name ?? '').toLowerCase().includes(searchQuery.toLowerCase())
     const yearMatch = searchYear === '' || String(s.survey_year) === searchYear
@@ -140,12 +227,21 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold">Alla enkäter</h1>
             <p className="text-white/40 text-sm mt-1">{surveys.length} enkäter totalt</p>
           </div>
-          <button
-            onClick={() => { setShowCreateLink(true); setCreatedLink('') }}
-            className="bg-blue-500 hover:bg-blue-400 text-white font-medium px-5 py-2.5 rounded-xl text-sm transition-colors"
-          >
-            + Skapa enkätlänk
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setShowPdfUpload(true); setPdfFile(null); setPdfExtracted(null); setPdfError('') }}
+              className="bg-purple-500 hover:bg-purple-400 text-white font-medium px-5 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+              Ladda upp årsredovisning
+            </button>
+            <button
+              onClick={() => { setShowCreateLink(true); setCreatedLink('') }}
+              className="bg-blue-500 hover:bg-blue-400 text-white font-medium px-5 py-2.5 rounded-xl text-sm transition-colors"
+            >
+              + Skapa enkätlänk
+            </button>
+          </div>
         </div>
 
         {/* Skapa länk-modal */}
@@ -205,6 +301,118 @@ export default function AdminPage() {
                   Stäng
                 </button>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* PDF-uppladdning */}
+        {showPdfUpload && (
+          <div className="bg-purple-500/5 border border-purple-500/20 rounded-2xl p-6 mb-8">
+            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              Ladda upp årsredovisning (PDF)
+            </h2>
+
+            {!pdfExtracted ? (
+              <>
+                <p className="text-white/50 text-sm mb-4">
+                  Ladda upp en BRFs årsredovisning i PDF-format. AI:n extraherar automatiskt alla ekonomiska nyckeltal.
+                </p>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={e => setPdfFile(e.target.files?.[0] || null)}
+                  className="block w-full text-sm text-white/60 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-500/20 file:text-purple-300 hover:file:bg-purple-500/30 mb-4"
+                />
+                {pdfFile && (
+                  <p className="text-white/40 text-xs mb-4">
+                    Vald fil: {pdfFile.name} ({(pdfFile.size / 1024 / 1024).toFixed(1)} MB)
+                  </p>
+                )}
+                {pdfError && <p className="text-red-400 text-sm mb-4">{pdfError}</p>}
+                <div className="flex gap-3">
+                  <button
+                    onClick={extractPdf}
+                    disabled={!pdfFile || pdfExtracting}
+                    className="bg-purple-500 hover:bg-purple-400 disabled:opacity-50 text-white font-medium px-6 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-2"
+                  >
+                    {pdfExtracting ? (
+                      <>
+                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        Extraherar... (30–60 sek)
+                      </>
+                    ) : 'Analysera PDF'}
+                  </button>
+                  <button
+                    onClick={() => setShowPdfUpload(false)}
+                    className="text-white/40 hover:text-white text-sm px-4 py-2.5 transition-colors"
+                  >
+                    Avbryt
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Extraherade värden – granska och skicka in */}
+                <p className="text-green-400 text-sm font-medium mb-1">
+                  ✅ Värden extraherade från: {pdfFile?.name}
+                </p>
+                {pdfExtracted.brf_name && (
+                  <p className="text-white/60 text-sm mb-3">BRF: <span className="text-white font-medium">{pdfExtracted.brf_name as string}</span></p>
+                )}
+                {pdfNotes && (
+                  <p className="text-white/40 text-xs mb-4 italic">{pdfNotes}</p>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 mb-4 max-h-[400px] overflow-y-auto pr-2">
+                  {Object.entries(pdfExtracted).filter(([k]) => k !== 'brf_name').map(([key, val]) => (
+                    <div key={key} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 flex items-center justify-between">
+                      <div className="min-w-0">
+                        <p className="text-white/40 text-[10px] font-mono truncate">{key}</p>
+                        <p className="text-white text-sm font-medium">
+                          {val === null ? <span className="text-white/20">—</span> :
+                           typeof val === 'boolean' ? (val ? 'Ja' : 'Nej') :
+                           typeof val === 'number' ? val.toLocaleString('sv-SE') :
+                           String(val)}
+                        </p>
+                      </div>
+                      {pdfConfidence?.[key] && (
+                        <span className={`text-[10px] font-medium shrink-0 ml-2 ${confColor(pdfConfidence[key])}`}>
+                          {confLabel(pdfConfidence[key])}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {pdfError && <p className="text-red-400 text-sm mb-4">{pdfError}</p>}
+                <div className="flex gap-3">
+                  <button
+                    onClick={submitExtracted}
+                    disabled={pdfSubmitting}
+                    className="bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-medium px-6 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-2"
+                  >
+                    {pdfSubmitting ? (
+                      <>
+                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        Sparar...
+                      </>
+                    ) : 'Godkänn och beräkna KPI:er →'}
+                  </button>
+                  <button
+                    onClick={() => { setPdfExtracted(null); setPdfConfidence(null); setPdfNotes('') }}
+                    className="text-white/40 hover:text-white text-sm px-4 py-2.5 transition-colors"
+                  >
+                    Analysera igen
+                  </button>
+                  <button
+                    onClick={() => { setShowPdfUpload(false); setPdfExtracted(null) }}
+                    className="text-white/40 hover:text-white text-sm px-4 py-2.5 transition-colors"
+                  >
+                    Avbryt
+                  </button>
+                </div>
+              </>
             )}
           </div>
         )}
