@@ -55,3 +55,4 @@ CREATE TABLE IF NOT EXISTS invitations (
 
 -- Säkerställ att user_profiles har rätt kolumner
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS display_name text;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS phone text;

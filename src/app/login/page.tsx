@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [brfName, setBrfName] = useState('')
+  const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -85,7 +86,7 @@ export default function LoginPage() {
         await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: signUpData.user.id, email, brf_name: brfName.trim() }),
+          body: JSON.stringify({ user_id: signUpData.user.id, email, brf_name: brfName.trim(), phone: phone.trim() }),
         })
       } catch {
         // Icke-kritiskt – profilen skapas ändå vid nästa inloggning
@@ -217,6 +218,17 @@ export default function LoginPage() {
                 required
                 className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors"
                 placeholder="namn@foretag.se"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-white/70 mb-1.5">Mobilnummer</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                required
+                className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors"
+                placeholder="070-123 45 67"
               />
             </div>
             <div>

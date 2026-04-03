@@ -16,7 +16,7 @@ function normalizeBrfBaseName(raw: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { user_id, email, brf_name } = await req.json()
+  const { user_id, email, brf_name, phone } = await req.json()
 
   if (!user_id || !email) {
     return NextResponse.json({ error: 'Saknar data' }, { status: 400 })
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
   await supabaseAdmin.from('user_profiles').upsert({
     id: user_id,
     role: 'brf_admin',
+    phone: phone || null,
   }, { onConflict: 'id' })
 
   // Koppla BRF-namn om det angavs vid registrering
