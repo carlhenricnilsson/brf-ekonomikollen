@@ -66,6 +66,12 @@ För varje rött eller gult nyckeltal: ge en konkret, handlingsorienterad rekomm
 ## Slutord till styrelsen
 En uppmuntrande men ärlig avslutning riktad till styrelsen.
 
+## Förslag till punkter på nästa styrelsemöte
+Baserat på analysen ovan, lista de viktigaste åtgärderna som styrelsen bör ta upp på sitt nästa möte. Presentera varje punkt som en tydlig dagordningspunkt med:
+- Rubrik för punkten
+- Kort motivering (varför detta bör prioriteras)
+- Förslag till beslutsformulering (skriv som ett färdigt "Styrelsen beslutar att...")
+
 Använd ett professionellt men tillgängligt språk. Undvik onödig jargong. Skriv som om du presenterar för en styrelse som inte är ekonomer.
 
 VIKTIGA FORMATERINGSREGLER:
