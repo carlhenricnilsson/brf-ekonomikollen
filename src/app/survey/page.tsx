@@ -165,7 +165,6 @@ function SurveyContent() {
   }, [token])
 
   const section = SECTIONS[step]
-  const progress = Math.round(((step) / SECTIONS.length) * 100)
 
   function setValue(id: string, value: string | number | boolean) {
     setAnswers(prev => ({ ...prev, [id]: value }))
@@ -175,6 +174,17 @@ function SurveyContent() {
     if (!q.dependsOn) return true
     return answers[q.dependsOn.field] === q.dependsOn.value
   }
+
+  // Beräkna total progress baserat på ifyllda fält
+  const allRequiredQuestions = SECTIONS.flatMap(s =>
+    s.questions.filter(q => q.required !== false && isVisible(q))
+  )
+  const answeredCount = allRequiredQuestions.filter(q => {
+    const val = answers[q.id]
+    return val !== undefined && val !== '' && val !== null
+  }).length
+  const totalRequired = allRequiredQuestions.length
+  const progress = totalRequired > 0 ? Math.round((answeredCount / totalRequired) * 100) : 0
 
   function canProceed() {
     return section.questions.every(q => {
@@ -213,8 +223,18 @@ function SurveyContent() {
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-white/10">
-        <div className="h-1 bg-blue-500 transition-all duration-500" style={{ width: `${progress}%` }} />
+      <div className="px-6 pt-4 pb-2">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${progress === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className={`text-xs font-medium tabular-nums ${progress === 100 ? 'text-green-400' : 'text-white/40'}`}>
+            {progress}%
+          </span>
+        </div>
       </div>
 
       <div className="max-w-2xl mx-auto px-6 py-12">
