@@ -19,7 +19,6 @@ Fält att extrahera:
 - B2_rental_income: Hyresintäkter från lokaler/garage/antenner (heltal i kr, 0 om ej aktuellt)
 - C1_total_debt: Total räntebärande låneskuld (heltal i kr)
 - C2_interest_costs: Totala räntekostnader under året (heltal i kr)
-- C3_avg_interest_rate: Genomsnittlig ränta i % (decimal, null om okänd)
 - D1_energy_costs: Totala kostnader för värme, el och vatten (heltal i kr)
 - E1_has_maintenance_plan: Har föreningen underhållsplan? (true/false)
 - E2_maintenance_plan_year: År underhållsplanen uppdaterades (heltal, null om okänt)

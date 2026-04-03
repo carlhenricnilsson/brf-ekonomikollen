@@ -49,7 +49,6 @@ export interface SurveyAnswer {
   // Sektion C – Lån och räntor
   C1_total_debt: number                    // Total räntebärande låneskuld (kr)
   C2_interest_costs: number                // Totala räntekostnader (kr)
-  C3_avg_interest_rate?: number            // Genomsnittlig ränta (%)
 
   // Sektion D – Energi och drift
   D1_energy_costs: number                  // Kostnader för värme, el, vatten (kr)

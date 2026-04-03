@@ -52,7 +52,6 @@ const SECTIONS: Section[] = [
     questions: [
       { id: 'C1_total_debt', label: 'Föreningens totala räntebärande låneskuld?', type: 'number', unit: 'kr' },
       { id: 'C2_interest_costs', label: 'Totala räntekostnader under året?', type: 'number', unit: 'kr' },
-      { id: 'C3_avg_interest_rate', label: 'Genomsnittlig ränta på befintliga lån (om känd)?', type: 'number', unit: '%', hint: 'Lämna blank om okänd', required: false },
     ]
   },
   {

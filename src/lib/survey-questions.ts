@@ -153,18 +153,6 @@ export const SURVEY_SECTIONS: SurveySectionMeta[] = [
         required: true,
         min: 0,
       },
-      {
-        id: 'C3_avg_interest_rate',
-        type: 'number',
-        label_sv: 'Genomsnittlig ränta på befintliga lån (om känd)?',
-        label_en: 'Average interest rate on existing loans (if known)?',
-        hint_sv: 'Lämna blankt om okänd',
-        hint_en: 'Leave blank if unknown',
-        unit: '%',
-        required: false,
-        min: 0,
-        max: 30,
-      },
     ],
   },
 
