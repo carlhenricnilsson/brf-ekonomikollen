@@ -1,13 +1,15 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase-client'
+import { Suspense } from 'react'
 
-type Mode = 'login' | 'register' | 'forgot'
+type Mode = 'login' | 'register' | 'forgot' | 'reset'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -16,6 +18,43 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
+  // Detektera ?reset=true i URL:en (efter klick på återställningslänk)
+  useEffect(() => {
+    if (searchParams.get('reset') === 'true') {
+      setMode('reset')
+    }
+  }, [searchParams])
+
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+
+    if (newPassword.length < 6) {
+      setError('Lösenordet måste vara minst 6 tecken')
+      setLoading(false)
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('Lösenorden matchar inte')
+      setLoading(false)
+      return
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+
+    if (error) {
+      setError(`Kunde inte uppdatera lösenordet: ${error.message}`)
+    } else {
+      setMessage('Lösenordet har uppdaterats! Du kan nu logga in med ditt nya lösenord.')
+      setMode('login')
+    }
+    setLoading(false)
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -129,6 +168,7 @@ export default function LoginPage() {
             {mode === 'login' && 'Logga in för att fortsätta'}
             {mode === 'register' && 'Skapa ett konto'}
             {mode === 'forgot' && 'Återställ ditt lösenord'}
+            {mode === 'reset' && 'Ange ditt nya lösenord'}
           </p>
         </div>
 
@@ -260,6 +300,55 @@ export default function LoginPage() {
           </form>
         )}
 
+        {mode === 'reset' && (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <div>
+              <label className="block text-sm text-white/70 mb-1.5">Nytt lösenord</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors"
+                placeholder="Minst 6 tecken"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-white/70 mb-1.5">Bekräfta lösenord</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-colors"
+                placeholder="Upprepa lösenordet"
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
+            >
+              {loading ? 'Sparar...' : 'Spara nytt lösenord'}
+            </button>
+
+            <p className="text-center text-sm text-white/40">
+              <button type="button" onClick={() => switchMode('login')} className="text-blue-400 hover:text-blue-300 transition-colors">
+                Tillbaka till inloggning
+              </button>
+            </p>
+          </form>
+        )}
+
         {mode === 'forgot' && (
           <form onSubmit={handleForgotPassword} className="space-y-4">
             <div>
@@ -298,5 +387,17 @@ export default function LoginPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <p className="text-white/40">Laddar...</p>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }
