@@ -148,7 +148,7 @@ function LoginForm() {
     })
 
     if (error) {
-      setError('Kunde inte skicka återställningslänk. Kontrollera e-postadressen.')
+      setError(`Fel: ${error.message}`)
     } else {
       setMessage('En länk för att återställa lösenordet har skickats till din e-post.')
     }
