@@ -153,10 +153,9 @@ function LoginForm() {
     setLoading(true)
     setError('')
 
-    // Använd alltid produktions-URL:en så att Supabase-redirect godkänns
-    const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+    // Använd alltid den aktuella originen så att reset-länken pekar tillbaka hit
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${productionUrl}/login?reset=true`,
+      redirectTo: `${window.location.origin}/login?reset=true`,
     })
 
     if (error) {
