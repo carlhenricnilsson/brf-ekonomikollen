@@ -237,122 +237,66 @@ export default function ResultsPage() {
 
   useEffect(() => {
     async function loadResults() {
-      // Kolla auth-status och roll
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setUserId(user.id)
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-        const role = (profile?.role ?? 'brf_admin') as 'superadmin' | 'brf_admin'
-        setUserRole(role)
-
-        if (role === 'superadmin') {
-          setReportUnlocked(true)
-        } else {
-          // Kolla betalning
-          const { data: paymentData } = await supabase
-            .from('payments')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('survey_id', surveyId)
-            .eq('status', 'completed')
-            .limit(1)
-          setReportUnlocked((paymentData && paymentData.length > 0) || false)
-        }
-      }
-
-      // Hämta survey-metadata
-      const { data: surveyRow } = await supabase
-        .from('surveys')
-        .select('brf_name, survey_year, version')
-        .eq('id', surveyId)
-        .single()
-      if (surveyRow) setSurveyMeta(surveyRow)
-
-      // Hämta historiska undersökningar för samma BRF
-      if (surveyRow?.brf_name) {
-        const baseName = surveyRow.brf_name.replace(/\s+\d{4}$/, '').trim()
-        const { data: allSurveys } = await supabase
-          .from('surveys')
-          .select('id, survey_year, brf_name, kpi_results(*)')
-          .neq('id', surveyId)
-          .eq('status', 'completed')
-
-        if (allSurveys) {
-          const matching = allSurveys
-            .filter(s => s.brf_name && s.brf_name.replace(/\s+\d{4}$/, '').trim() === baseName)
-            .map(s => ({
-              year: s.survey_year,
-              surveyId: s.id,
-              kpis: (s.kpi_results ?? []).map((k: { kpi_number: number; kpi_name: string; value: number; unit: string; traffic_light: string }) => ({
-                id: k.kpi_number,
-                name: k.kpi_name,
-                value: Number(k.value),
-                unit: k.unit,
-                light: k.traffic_light as TrafficLight,
-              })),
-            }))
-            .filter(s => s.kpis.length > 0)
-            .sort((a, b) => a.year - b.year)
-          setHistoricalKpis(matching)
-        }
-      }
-
-      // Hämta sparad AI-analys
-      const { data: aiRows } = await supabase
-        .from('ai_analyses')
-        .select('analysis_text, created_at')
-        .eq('survey_id', surveyId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-      if (aiRows && aiRows.length > 0) {
-        setAiAnalysis(aiRows[0].analysis_text)
-        setAiSavedAt(aiRows[0].created_at)
-      }
+      // Hämta session-token för server-side API-anrop
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
 
       // Försök sessionStorage först (direkt efter enkät)
       const stored = sessionStorage.getItem('ekk_results')
-      if (stored) {
-        const data = JSON.parse(stored)
-        if (data.surveyId === surveyId) {
-          setKpis(data.kpis)
-          setAnswers(data.answers)
-          setLoading(false)
-          return
+      const sessionData = stored ? JSON.parse(stored) : null
+      const hasSessionData = sessionData?.surveyId === surveyId
+
+      // Hämta all data från server-side endpoint (kringgår RLS)
+      const headers: Record<string, string> = {}
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      const res = await fetch(`/api/survey-results/${surveyId}`, { headers })
+      if (res.ok) {
+        const data = await res.json()
+        setUserRole(data.userRole)
+        if (data.userId) setUserId(data.userId)
+        setReportUnlocked(data.reportUnlocked)
+        if (data.surveyMeta) setSurveyMeta(data.surveyMeta)
+        if (data.aiAnalysis) {
+          setAiAnalysis(data.aiAnalysis)
+          setAiSavedAt(data.aiSavedAt)
         }
-      }
 
-      // Annars hämta från Supabase
-      const { data: kpiRows } = await supabase
-        .from('kpi_results')
-        .select('*')
-        .eq('survey_id', surveyId)
-        .order('kpi_number')
+        // Historiska KPI:er
+        if (data.historicalKpis?.length > 0) {
+          setHistoricalKpis(data.historicalKpis.map((h: { year: number; kpis: { kpi_number: number; kpi_name: string; value: number; unit: string; traffic_light: string }[] }) => ({
+            year: h.year,
+            kpis: h.kpis.map((k) => ({
+              id: k.kpi_number,
+              name: k.kpi_name,
+              value: Number(k.value),
+              unit: k.unit,
+              light: k.traffic_light as TrafficLight,
+            })),
+          })))
+        }
 
-      const { data: answerRows } = await supabase
-        .from('answers')
-        .select('*')
-        .eq('survey_id', surveyId)
+        // Använd sessionStorage-data om tillgänglig, annars API-data
+        if (hasSessionData) {
+          setKpis(sessionData.kpis)
+          setAnswers(sessionData.answers)
+        } else if (data.kpis?.length > 0) {
+          setKpis(data.kpis.map((k: { kpi_number: number; kpi_name: string; value: number; unit: string; traffic_light: string }) => ({
+            id: k.kpi_number,
+            name: k.kpi_name,
+            value: Number(k.value),
+            unit: k.unit,
+            light: k.traffic_light as TrafficLight,
+          })))
+        }
 
-      if (kpiRows) {
-        setKpis(kpiRows.map(k => ({
-          id: k.kpi_number,
-          name: k.kpi_name,
-          value: Number(k.value),
-          unit: k.unit,
-          light: k.traffic_light as TrafficLight,
-        })))
-      }
-
-      if (answerRows) {
-        const ans: Record<string, unknown> = {}
-        answerRows.forEach(r => {
-          ans[r.question_code] = r.answer_numeric ?? r.answer_text ?? r.answer_choice
-        })
-        setAnswers(ans)
+        if (!hasSessionData && data.answers?.length > 0) {
+          const ans: Record<string, unknown> = {}
+          data.answers.forEach((r: { question_code: string; answer_numeric: number | null; answer_text: string | null; answer_choice: string | null }) => {
+            ans[r.question_code] = r.answer_numeric ?? r.answer_text ?? r.answer_choice
+          })
+          setAnswers(ans)
+        }
       }
 
       setLoading(false)

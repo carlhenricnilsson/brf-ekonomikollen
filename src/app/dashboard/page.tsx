@@ -36,48 +36,20 @@ export default function DashboardPage() {
       setUserEmail(user.email ?? '')
       setUserId(user.id)
 
-      // Hämta användarens BRF-kopplingar
-      const { data: brfLinks } = await supabase
-        .from('brf_admin_brfs')
-        .select('brf_base_name')
-        .eq('user_id', user.id)
-
-      const brfNames = (brfLinks ?? []).map(b => b.brf_base_name)
-      setMyBrfs(brfNames)
-
-      // Hämta alla undersökningar som matchar användarens BRF:er
-      if (brfNames.length > 0) {
-        const { data: allSurveys } = await supabase
-          .from('surveys')
-          .select('*, kpi_results(*)')
-          .eq('status', 'completed')
-
-        // Filtrera på BRF-basnamn (utan år)
-        const matching = (allSurveys ?? []).filter(s => {
-          if (!s.brf_name) return false
-          const baseName = s.brf_name.replace(/\s+\d{4}$/, '').trim()
-          return brfNames.includes(baseName)
+      // Hämta enkäter och betalningar via server-side route (kringgår RLS)
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (token) {
+        const res = await fetch('/api/my-surveys', {
+          headers: { Authorization: `Bearer ${token}` }
         })
-
-        matching.sort((a, b) => {
-          const nameA = (a.brf_name ?? '').toLowerCase()
-          const nameB = (b.brf_name ?? '').toLowerCase()
-          if (nameA < nameB) return -1
-          if (nameA > nameB) return 1
-          return b.survey_year - a.survey_year
-        })
-
-        setSurveys(matching)
+        if (res.ok) {
+          const data = await res.json()
+          setMyBrfs(data.brfNames ?? [])
+          setSurveys(data.surveys ?? [])
+          setPayments(data.payments ?? [])
+        }
       }
-
-      // Hämta betalningar
-      const { data: paymentData } = await supabase
-        .from('payments')
-        .select('survey_id, status')
-        .eq('user_id', user.id)
-        .eq('status', 'completed')
-
-      setPayments(paymentData ?? [])
       setLoading(false)
     }
     init()
