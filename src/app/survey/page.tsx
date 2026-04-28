@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { supabase } from '@/lib/supabase-client'
 
 type Answers = Record<string, string | number | boolean>
 
@@ -154,12 +155,24 @@ function SurveyContent() {
   const token = searchParams.get('token')
 
   useEffect(() => {
-    // Hämta BRF-namn om token finns
     async function fetchSurveyInfo() {
-      if (!token) return
-      const res = await fetch(`/api/survey-info?token=${token}`)
-      const data = await res.json()
-      if (data.brf_name) setBrfName(data.brf_name)
+      if (token) {
+        // Hämta BRF-namn via token
+        const res = await fetch(`/api/survey-info?token=${token}`)
+        const data = await res.json()
+        if (data.brf_name) setBrfName(data.brf_name)
+      } else {
+        // Hämta BRF-namn från inloggad BRF-admins profil
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: brf } = await supabase
+            .from('brf_admin_brfs')
+            .select('brf_base_name')
+            .eq('user_id', user.id)
+            .single()
+          if (brf?.brf_base_name) setBrfName(brf.brf_base_name)
+        }
+      }
     }
     fetchSurveyInfo()
   }, [token])
@@ -201,7 +214,7 @@ function SurveyContent() {
       const res = await fetch('/api/survey', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers, token }),
+        body: JSON.stringify({ answers, token, brf_name: brfName || undefined }),
       })
       const data = await res.json()
       if (data.surveyId) {

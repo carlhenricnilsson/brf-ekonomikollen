@@ -44,7 +44,7 @@ function calculateKPIs(a: Record<string, number | string | boolean>) {
 }
 
 export async function POST(req: NextRequest) {
-  const { answers, token } = await req.json()
+  const { answers, token, brf_name } = await req.json()
   const kpis = calculateKPIs(answers)
 
   let surveyId: string
@@ -68,9 +68,13 @@ export async function POST(req: NextRequest) {
     }
   } else {
     // Skapa ny enkät (direktflöde utan token)
+    const surveyYear = Number(answers.A1_year) || new Date().getFullYear()
+    const insertData: Record<string, unknown> = { survey_year: surveyYear, status: 'completed' }
+    if (brf_name) insertData.brf_name = `${brf_name} ${surveyYear}`
+
     const { data: survey, error: surveyError } = await supabaseAdmin
       .from('surveys')
-      .insert({ survey_year: Number(answers.A1_year) || new Date().getFullYear(), status: 'completed' })
+      .insert(insertData)
       .select()
       .single()
 
