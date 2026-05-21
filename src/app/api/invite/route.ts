@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Resend } from 'resend'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { requireSuperadmin } from '@/lib/auth'
 import { parseBody, inviteSchema } from '@/lib/validation'
+
+// Lazy-init: skapas vid första request (samma mönster som Stripe).
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY!)
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
 
 export async function POST(req: NextRequest) {
   const auth = await requireSuperadmin(req)
@@ -53,5 +68,63 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true, invitation: data })
+  // Skicka välkomstmail via Resend. Misslyckande loggas men routen
+  // returnerar fortfarande success – inbjudan finns i DB och register-
+  // flödet kopplar BRF automatiskt vid signup oavsett mail-status.
+  let email_sent = false
+  let email_error: string | null = null
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[invite] RESEND_API_KEY saknas – mail skickas ej')
+    email_error = 'RESEND_API_KEY saknas'
+  } else {
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://brf-ekonomikollen.vercel.app'
+      const loginUrl = `${siteUrl}/login`
+      const safeEmail = escapeHtml(email)
+      const brfLine = brf_base_name
+        ? `<p style="font-size:16px;line-height:1.5;margin:0 0 16px;">BRF: <strong>${escapeHtml(brf_base_name)}</strong></p>`
+        : ''
+      const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#1a1a1a;">
+        <h1 style="font-size:22px;margin:0 0 16px;">Inbjudan till BRF-Ekonomikollen</h1>
+        <p style="font-size:16px;line-height:1.5;margin:0 0 16px;">Hej!</p>
+        <p style="font-size:16px;line-height:1.5;margin:0 0 16px;">Du har bjudits in som BRF-administratör till <strong>BRF-Ekonomikollen</strong> — ett verktyg som ger din bostadsrättsförening en samlad bild av den ekonomiska hälsan baserat på BFNAR 2023:1.</p>
+        ${brfLine}
+        <p style="font-size:16px;line-height:1.5;margin:0 0 24px;">Registrera ditt konto med denna e-postadress (<strong>${safeEmail}</strong>) så kopplas du automatiskt till din BRF:</p>
+        <p style="margin:0 0 32px;"><a href="${loginUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;">Skapa konto</a></p>
+        <p style="font-size:14px;line-height:1.5;color:#666;margin:0;">Eller kopiera länken: <span style="color:#2563eb;">${loginUrl}</span></p>
+        <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
+        <p style="font-size:13px;line-height:1.5;color:#888;margin:0;">Skickad via BRF-Ekonomikollen. Om du inte väntat dig denna inbjudan, ignorera mailet.</p>
+      </div>`
+      const text = `Inbjudan till BRF-Ekonomikollen
+
+Hej!
+
+Du har bjudits in som BRF-administratör till BRF-Ekonomikollen.${brf_base_name ? `\nBRF: ${brf_base_name}` : ''}
+
+Registrera ditt konto med denna e-postadress (${email}) här:
+${loginUrl}
+
+Om du inte väntat dig denna inbjudan, ignorera mailet.`
+
+      const resend = getResend()
+      const sendRes = await resend.emails.send({
+        from: 'BRF-Ekonomikollen <onboarding@resend.dev>',
+        to: email,
+        subject: 'Inbjudan till BRF-Ekonomikollen',
+        html,
+        text,
+      })
+      if (sendRes.error) {
+        email_error = sendRes.error.message || 'okänt mailfel'
+        console.error('[invite] Resend send error:', sendRes.error)
+      } else {
+        email_sent = true
+      }
+    } catch (e) {
+      email_error = e instanceof Error ? e.message : String(e)
+      console.error('[invite] Resend exception:', e)
+    }
+  }
+
+  return NextResponse.json({ success: true, invitation: data, email_sent, email_error })
 }
