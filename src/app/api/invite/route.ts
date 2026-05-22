@@ -79,7 +79,10 @@ export async function POST(req: NextRequest) {
   } else {
     try {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://brf-ekonomikollen.vercel.app'
-      const loginUrl = `${siteUrl}/login`
+      // Inbjudningslänk: öppnar /login direkt i registreringsläge med
+      // förifylld e-post (så BRF-kopplingen matchar rätt adress).
+      const registerUrl = `${siteUrl}/login?register=true&email=${encodeURIComponent(email)}`
+      const safeRegisterUrl = escapeHtml(registerUrl)
       const safeEmail = escapeHtml(email)
       const brfLine = brf_base_name
         ? `<p style="font-size:16px;line-height:1.5;margin:0 0 16px;">BRF: <strong>${escapeHtml(brf_base_name)}</strong></p>`
@@ -90,8 +93,8 @@ export async function POST(req: NextRequest) {
         <p style="font-size:16px;line-height:1.5;margin:0 0 16px;">Du har bjudits in som BRF-administratör till <strong>BRF-Ekonomikollen</strong> — ett verktyg som ger din bostadsrättsförening en samlad bild av den ekonomiska hälsan baserat på BFNAR 2023:1.</p>
         ${brfLine}
         <p style="font-size:16px;line-height:1.5;margin:0 0 24px;">Registrera ditt konto med denna e-postadress (<strong>${safeEmail}</strong>) så kopplas du automatiskt till din BRF:</p>
-        <p style="margin:0 0 32px;"><a href="${loginUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;">Skapa konto</a></p>
-        <p style="font-size:14px;line-height:1.5;color:#666;margin:0;">Eller kopiera länken: <span style="color:#2563eb;">${loginUrl}</span></p>
+        <p style="margin:0 0 32px;"><a href="${safeRegisterUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;">Skapa konto</a></p>
+        <p style="font-size:14px;line-height:1.5;color:#666;margin:0;">Eller kopiera länken: <span style="color:#2563eb;">${safeRegisterUrl}</span></p>
         <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
         <p style="font-size:13px;line-height:1.5;color:#888;margin:0;">Skickad via BRF-Ekonomikollen. Om du inte väntat dig denna inbjudan, ignorera mailet.</p>
       </div>`
@@ -102,7 +105,7 @@ Hej!
 Du har bjudits in som BRF-administratör till BRF-Ekonomikollen.${brf_base_name ? `\nBRF: ${brf_base_name}` : ''}
 
 Registrera ditt konto med denna e-postadress (${email}) här:
-${loginUrl}
+${registerUrl}
 
 Om du inte väntat dig denna inbjudan, ignorera mailet.`
 

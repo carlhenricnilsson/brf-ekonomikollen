@@ -23,6 +23,14 @@ function LoginForm() {
   const [resetReady, setResetReady] = useState(false)
 
   useEffect(() => {
+    // Inbjudningslänk: ?register=true öppnar direkt i registreringsläge,
+    // ?email=… förifyller den inbjudna adressen (matchar BRF-kopplingen).
+    if (searchParams.get('register') === 'true') {
+      setMode('register')
+      const invitedEmail = searchParams.get('email')
+      if (invitedEmail) setEmail(invitedEmail)
+    }
+
     if (searchParams.get('reset') !== 'true') return
     setMode('reset')
 
