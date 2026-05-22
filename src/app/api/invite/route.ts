@@ -108,7 +108,7 @@ Om du inte väntat dig denna inbjudan, ignorera mailet.`
 
       const resend = getResend()
       const sendRes = await resend.emails.send({
-        from: 'BRF-Ekonomikollen <onboarding@resend.dev>',
+        from: 'BRF-Ekonomikollen <noreply@send.kunskapspartner.se>',
         to: email,
         subject: 'Inbjudan till BRF-Ekonomikollen',
         html,
