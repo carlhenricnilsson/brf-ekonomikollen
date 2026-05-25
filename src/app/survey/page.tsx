@@ -151,6 +151,7 @@ function SurveyContent() {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Answers>({})
   const [loading, setLoading] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [brfName, setBrfName] = useState('')
   const token = searchParams.get('token')
 
@@ -210,19 +211,29 @@ function SurveyContent() {
 
   async function handleSubmit() {
     setLoading(true)
+    setSubmitError(null)
     try {
       const res = await fetch('/api/survey', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers, token, brf_name: brfName || undefined }),
+        // token: null från searchParams.get → coerce till undefined så
+        // payloaden inte innehåller fält som schemat inte förväntar.
+        // (Servern tar nullish nu, men håll wire-formatet rent.)
+        body: JSON.stringify({ answers, token: token || undefined, brf_name: brfName || undefined }),
       })
-      const data = await res.json()
-      if (data.surveyId) {
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.surveyId) {
         sessionStorage.setItem('ekk_results', JSON.stringify(data))
         router.push(`/results/${data.surveyId}`)
+        return
       }
+      // Visa felet och låt knappen bli klickbar igen så användaren
+      // kan försöka skicka in på nytt (tidigare: tyst hängande spinner).
+      setSubmitError(data?.error || `Kunde inte skicka in enkäten (HTTP ${res.status})`)
+      setLoading(false)
     } catch (e) {
       console.error(e)
+      setSubmitError(e instanceof Error ? e.message : 'Nätverksfel – försök igen')
       setLoading(false)
     }
   }
@@ -337,6 +348,13 @@ function SurveyContent() {
             )
           })}
         </div>
+
+        {/* Submit-fel: tydligt synligt så användaren inte fastnar i tyst spinner */}
+        {submitError && step === SECTIONS.length - 1 && (
+          <div className="mt-8 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300" role="alert">
+            <strong className="font-semibold">Inlämning misslyckades:</strong> {submitError}
+          </div>
+        )}
 
         {/* Navigation */}
         <div className="flex justify-between mt-12 pt-8 border-t border-white/10">

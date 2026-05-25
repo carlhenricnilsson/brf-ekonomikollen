@@ -73,11 +73,13 @@ export const manageSurveySchema = z.object({
 // --- survey (enkätinlämning) ---
 // Lätt, beteendebevarande: answers måste vara ett icke-tomt objekt
 // (annars skapas en fantom-enkät med 0-KPI:er). Fältnivå-coercion
-// hanteras robust i kpi-calculator (num()). token/brf_name valfria.
+// hanteras robust i kpi-calculator (num()). token/brf_name valfria
+// och får vara null (klienten skickar `searchParams.get('token')`
+// som blir null för inloggat brf_admin-flöde utan ?token=).
 export const surveySubmitSchema = z.object({
   answers: z
     .record(z.string(), z.unknown())
     .refine(o => Object.keys(o).length > 0, { message: 'Inga svar angivna' }),
-  token: z.string().optional(),
-  brf_name: z.string().optional(),
+  token: z.string().nullish(),
+  brf_name: z.string().nullish(),
 })

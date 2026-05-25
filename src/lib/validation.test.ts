@@ -101,4 +101,10 @@ describe('surveySubmitSchema', () => {
     expect(parseBody(surveySubmitSchema, { answers: { A1_year: 2024 } }).ok).toBe(true)
     expect(parseBody(surveySubmitSchema, { answers: { A1_year: 2024 }, token: 't', brf_name: 'X' }).ok).toBe(true)
   })
+  it('token/brf_name får vara null (klienten skickar searchParams.get som null)', () => {
+    // Regression: schemat avvisade tidigare null ("Expected string, received null")
+    // → systembug som blockerade alla inlämningar från inloggade brf_admins.
+    expect(parseBody(surveySubmitSchema, { answers: { A1_year: 2024 }, token: null }).ok).toBe(true)
+    expect(parseBody(surveySubmitSchema, { answers: { A1_year: 2024 }, token: null, brf_name: null }).ok).toBe(true)
+  })
 })

@@ -60,6 +60,20 @@ describe('POST /api/survey', () => {
     expect((await res.json()).surveyId).toBe('s9')
   })
 
+  it('token: null (brf_admin-flöde utan ?token=) → 200, skapar ny enkät', async () => {
+    // Klienten skickar `searchParams.get('token')` rakt av, vilket
+    // blir null när URL:en saknar ?token=. Tidigare avvisade schemat
+    // detta som "Expected string, received null" → 400 (systembug
+    // som blockerade alla inlämningar från inloggade brf_admins).
+    setSpec({
+      surveys: (s: QState) => (s.op === 'insert' ? { data: { id: 's2' } } : {}),
+      ...okWrites,
+    })
+    const res = await POST(makeReq({ body: { answers, token: null, brf_name: 'BRF Test' } }))
+    expect(res.status).toBe(200)
+    expect((await res.json()).surveyId).toBe('s2')
+  })
+
   it('#3: survey-insert-fel → 500 (INTE fejkad surveyId + 200)', async () => {
     setSpec({ surveys: (s: QState) => (s.op === 'insert' ? { error: { message: 'db' } } : {}) })
     const res = await POST(makeReq({ body: { answers } }))
