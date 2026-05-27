@@ -87,7 +87,10 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-white/40 text-sm">{userEmail}</span>
-          <button onClick={handleLogout} className="text-sm text-white/50 hover:text-white transition-colors">
+          <button
+            onClick={handleLogout}
+            className="text-sm bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition-colors font-medium"
+          >
             Logga ut
           </button>
         </div>
