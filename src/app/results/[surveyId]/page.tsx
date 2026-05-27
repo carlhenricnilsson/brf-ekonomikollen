@@ -55,12 +55,7 @@ export default function ResultsPage() {
       const token = session?.access_token
       setHasSession(!!session)
 
-      // Försök sessionStorage först (direkt efter enkät)
-      const stored = sessionStorage.getItem('ekk_results')
-      const sessionData = stored ? JSON.parse(stored) : null
-      const hasSessionData = sessionData?.surveyId === surveyId
-
-      // Hämta all data från server-side endpoint (kringgår RLS)
+      // Hämta all data från server-side endpoint (kringgår RLS) – AUKTORITATIV
       const headers: Record<string, string> = {}
       if (token) headers['Authorization'] = `Bearer ${token}`
 
@@ -90,11 +85,11 @@ export default function ResultsPage() {
           })))
         }
 
-        // Använd sessionStorage-data om tillgänglig, annars API-data
-        if (hasSessionData) {
-          setKpis(sessionData.kpis)
-          setAnswers(sessionData.answers)
-        } else if (data.kpis?.length > 0) {
+        // KPI:er – API är sanningskällan. (Tidigare läste vi sessionStorage
+        // först som "fast path direkt efter inlämning". Det orsakade visning
+        // av stale/0-värden vid sidladdning när sessionStorage av någon
+        // anledning innehöll trasig data trots matchande surveyId.)
+        if (data.kpis?.length > 0) {
           setKpis(data.kpis.map((k: { kpi_number: number; kpi_name: string; value: number; unit: string; traffic_light: string }) => ({
             id: k.kpi_number,
             name: k.kpi_name,
@@ -104,13 +99,24 @@ export default function ResultsPage() {
           })))
         }
 
-        if (!hasSessionData && data.answers?.length > 0) {
+        if (data.answers?.length > 0) {
           const ans: Record<string, unknown> = {}
           data.answers.forEach((r: { question_code: string; answer_numeric: number | null; answer_text: string | null; answer_choice: string | null }) => {
             ans[r.question_code] = r.answer_numeric ?? r.answer_text ?? r.answer_choice
           })
           setAnswers(ans)
         }
+      } else {
+        // Fallback: API misslyckades (404/429/500) – använd sessionStorage
+        // som best-effort så användaren inte ser en tom sida.
+        try {
+          const stored = sessionStorage.getItem('ekk_results')
+          const sessionData = stored ? JSON.parse(stored) : null
+          if (sessionData?.surveyId === surveyId && Array.isArray(sessionData.kpis)) {
+            setKpis(sessionData.kpis)
+            if (sessionData.answers) setAnswers(sessionData.answers)
+          }
+        } catch { /* sessionStorage trasig – inget att göra */ }
       }
 
       setLoading(false)

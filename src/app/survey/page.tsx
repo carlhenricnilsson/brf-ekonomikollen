@@ -163,15 +163,20 @@ function SurveyContent() {
         const data = await res.json()
         if (data.brf_name) setBrfName(data.brf_name)
       } else {
-        // Hämta BRF-namn från inloggad BRF-admins profil
+        // Hämta BRF-namn från inloggad BRF-admins profil. Använd inte
+        // .single() – en admin kan vara kopplad till FLERA BRFs och då
+        // kastar .single() och brf_name skrivs aldrig till enkäten
+        // (vilket gör att den sedan inte visas i dashboarden).
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-          const { data: brf } = await supabase
+          const { data: brfs } = await supabase
             .from('brf_admin_brfs')
             .select('brf_base_name')
             .eq('user_id', user.id)
-            .single()
-          if (brf?.brf_base_name) setBrfName(brf.brf_base_name)
+            .order('created_at', { ascending: true })
+            .limit(1)
+          const firstBrfName = brfs?.[0]?.brf_base_name
+          if (firstBrfName) setBrfName(firstBrfName)
         }
       }
     }
