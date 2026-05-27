@@ -33,6 +33,7 @@ export default function ResultsPage() {
   // Paywall-state
   const [userRole, setUserRole] = useState<'superadmin' | 'brf_admin' | 'anonymous'>('anonymous')
   const [userId, setUserId] = useState<string | null>(null)
+  const [hasSession, setHasSession] = useState(false)
   const [reportUnlocked, setReportUnlocked] = useState(false)
   const [voucherCode, setVoucherCode] = useState('')
   const [voucherError, setVoucherError] = useState('')
@@ -52,6 +53,7 @@ export default function ResultsPage() {
       // Hämta session-token för server-side API-anrop
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
+      setHasSession(!!session)
 
       // Försök sessionStorage först (direkt efter enkät)
       const stored = sessionStorage.getItem('ekk_results')
@@ -282,31 +284,13 @@ export default function ResultsPage() {
       <div className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
         <span className="text-xl font-bold">BRF-Ekonomi<span className="text-blue-400">kollen</span></span>
         <div className="flex items-center gap-3">
-          {/* PDF-knappar – endast superadmin eller betald (speglar servern) */}
-          {canDownloadPdf && (
-            <>
-              <button
-                onClick={() => downloadPdf('kpi')}
-                disabled={pdfLoading !== null}
-                className="flex items-center gap-1.5 text-sm bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg transition-colors font-medium"
-                title="Ladda ner KPI-rapporten utan AI-analys"
-              >
-                {pdfLoading === 'kpi' ? <Spinner /> : <DownloadIcon />}
-                Nyckeltal
-              </button>
-              <button
-                onClick={() => downloadPdf('all')}
-                disabled={pdfLoading !== null || !aiAnalysis}
-                className="flex items-center gap-1.5 text-sm bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg transition-colors font-medium"
-                title={!aiAnalysis ? 'Generera AI-analys först' : 'Ladda ner komplett rapport med AI-analys'}
-              >
-                {pdfLoading === 'all' ? <Spinner /> : <DownloadIcon />}
-                Fullrapport
-              </button>
-            </>
-          )}
+          {/* Primär nedladdning sker via Rapportportal-rutan i body –
+              håller headern ren och säkerställer att Logga ut alltid syns. */}
           <Link href="/survey" className="text-sm text-white/50 hover:text-white transition-colors">Ny enkät</Link>
-          {userRole !== 'anonymous' && (
+          {/* Visa Logga ut om klienten har en supabase-session ELLER om
+              servern resolvat användaren – så knappen aldrig "försvinner"
+              om någondera signalen är trög. */}
+          {(hasSession || userRole !== 'anonymous') && (
             <button
               onClick={handleLogout}
               className="text-sm bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition-colors font-medium"
