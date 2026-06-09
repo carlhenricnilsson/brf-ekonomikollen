@@ -78,6 +78,39 @@ export default function Home() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="max-w-3xl mx-auto px-8 py-16">
+        <h2 className="text-3xl font-bold text-center mb-12">Vanliga frågor</h2>
+        <div className="space-y-4">
+          {[
+            {
+              q: 'Vad får jag ut som jag inte får av att köra årsredovisningen i ChatGPT?',
+              a: 'ChatGPT kan sammanfatta text – BRF-Ekonomikollen levererar ett revisorsliknande beslutsunderlag. Skillnaderna är avgörande: (1) Nyckeltalen beräknas enligt exakta BFNAR 2023:1-formler och tröskelvärden – ChatGPT känner inte till dessa och kan ge felaktiga siffror. (2) Trafikljusen är kalibrerade mot faktiska branschnormer för svenska BRFs. (3) Din BRFs finansiella data laddas aldrig upp till OpenAI. (4) Rapporten har juridisk tyngd mot revisorer och banker – en ChatGPT-sammanfattning har det inte.',
+            },
+            {
+              q: 'Vilka uppgifter behöver jag ha till hands?',
+              a: 'Din BRFs senaste årsredovisning räcker. Enkäten guidar dig igenom exakt vilka siffror som behövs – inga enskilda kostnadsposter som el eller fastighetsskötsel krävs.',
+            },
+            {
+              q: 'Hur lång tid tar det att fylla i enkäten?',
+              a: 'Cirka 10–15 minuter om du har årsredovisningen framför dig. Rapporten med alla 7 nyckeltal och AI-analys är klar direkt.',
+            },
+            {
+              q: 'Kan jag göra om analysen nästa år och jämföra?',
+              a: 'Ja. Varje enkät sparas med ett år kopplat till sig. Kommande versioner av rapporten inkluderar trendanalys så att du kan följa föreningens ekonomiska utveckling över tid.',
+            },
+          ].map((item, i) => (
+            <details key={i} className="bg-white/5 border border-white/10 rounded-xl group">
+              <summary className="px-6 py-5 cursor-pointer font-medium text-white/90 hover:text-white flex justify-between items-center list-none">
+                {item.q}
+                <span className="text-white/30 group-open:rotate-180 transition-transform ml-4 shrink-0">▾</span>
+              </summary>
+              <p className="px-6 pb-5 text-white/55 text-sm leading-relaxed">{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="max-w-3xl mx-auto px-8 py-16 text-center">
         <div className="bg-blue-500/10 border border-blue-400/20 rounded-2xl p-10">
