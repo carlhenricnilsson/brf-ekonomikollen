@@ -453,7 +453,8 @@ export default function ResultsPage() {
                 Få tillgång till alla 7 nyckeltal, trendanalys, fullständig AI-analys med rekommendationer,
                 framtidsutsikter och styrelsemötespunkter.
               </p>
-              <p className="text-2xl font-bold text-white mb-6">5 995 kr</p>
+              <p className="text-2xl font-bold text-white mb-1">5 995 kr</p>
+              <p className="text-white/40 text-xs mb-6">inkl. moms</p>
 
               {!showPaywall ? (
                 <div className="flex flex-col items-center gap-3">
@@ -602,7 +603,7 @@ export default function ResultsPage() {
                 onClick={() => setShowPaywall(true)}
                 className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors text-sm"
               >
-                Lås upp hela rapporten – 5 995 kr
+                Lås upp hela rapporten – 5 995 kr inkl. moms
               </button>
             </div>
           </div>
