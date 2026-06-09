@@ -9,7 +9,7 @@ function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!)
 }
 
-const REPORT_PRICE = 5995
+const REPORT_PRICE = 5995 // inkl. 25% svensk moms (tax-inclusive)
 
 export async function POST(req: NextRequest) {
   // Skydd mot abuse/brute-force av voucher-vägen i checkout.
@@ -94,12 +94,14 @@ export async function POST(req: NextRequest) {
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     payment_method_types: ['card'],
+    automatic_tax: { enabled: true }, // Stripe Tax är aktiverat – beräknar 25% SE moms automatiskt
     line_items: [
       {
         price_data: {
           currency: 'sek',
           product_data: { name: productName },
           unit_amount: finalPrice * 100, // Stripe räknar i öre
+          tax_behavior: 'inclusive',     // 5 995 kr är inkl. 25% moms
         },
         quantity: 1,
       },
