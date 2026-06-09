@@ -361,6 +361,18 @@ function SurveyContent() {
           </div>
         )}
 
+        {/* Trygghetsnot på sista steget */}
+        {step === SECTIONS.length - 1 && (
+          <div className="mt-8 rounded-lg border border-blue-500/20 bg-blue-500/5 px-5 py-4 text-sm text-white/60">
+            <p className="font-medium text-white/80 mb-1">✓ Du har angett allt som behövs</p>
+            <p>
+              Enkäten frågar om exakt de uppgifter som krävs för BFNAR&nbsp;2023:1&apos;s 7&nbsp;nyckeltal.
+              Du behöver inte ange enskilda driftkostnader som fastighetsskötsel, el eller sophantering –
+              de ingår inte i beräkningarna.
+            </p>
+          </div>
+        )}
+
         {/* Navigation */}
         <div className="flex justify-between mt-12 pt-8 border-t border-white/10">
           <button
