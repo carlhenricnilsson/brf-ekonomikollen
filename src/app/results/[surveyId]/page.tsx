@@ -130,7 +130,10 @@ export default function ResultsPage() {
 
   function getReportName() {
     if (!surveyMeta) return null
-    const name = surveyMeta.brf_name || 'Enkät'
+    // brf_name innehåller redan årtalet (sätts som "Namn ÅÅÅÅ" vid skapande).
+    // Strippa ev. avslutande årtal innan vi lägger till survey_year igen,
+    // annars dubbleras det ("BRF Köptest 2000 2000").
+    const name = (surveyMeta.brf_name || 'Enkät').replace(/\s+\d{4}$/, '')
     const base = `${name} ${surveyMeta.survey_year}`
     return (surveyMeta.version ?? 1) > 1 ? `${base} ver.${surveyMeta.version}` : base
   }
@@ -227,8 +230,9 @@ export default function ResultsPage() {
       }, kpis[0])
     : null
 
-  // Fullständig tillgång: superadmin, betald, eller anonym (från enkätlänk)
-  const hasFullAccess = reportUnlocked || userRole === 'superadmin' || userRole === 'anonymous'
+  // Fullständig tillgång: superadmin eller betald. Anonyma (utloggade) och
+  // brf_admin utan betalning möts av paywall – förhandsvisning + köp-CTA.
+  const hasFullAccess = reportUnlocked || userRole === 'superadmin'
   // PDF är en betald deliverabel: speglar serverns generate-pdf-grind
   // (superadmin ELLER betald). Anonym ser rapporten på webben men
   // inte PDF-knappen (hade annars gett tyst 403).
@@ -456,7 +460,17 @@ export default function ResultsPage() {
               <p className="text-2xl font-bold text-white mb-1">5 995 kr</p>
               <p className="text-white/40 text-xs mb-6">inkl. moms</p>
 
-              {!showPaywall ? (
+              {!userId ? (
+                <div className="flex flex-col items-center gap-3">
+                  <Link
+                    href={`/login?next=/results/${surveyId}`}
+                    className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-8 py-3 rounded-xl transition-colors"
+                  >
+                    Logga in för att köpa
+                  </Link>
+                  <p className="text-white/30 text-xs">Du behöver ett konto för att låsa upp rapporten.</p>
+                </div>
+              ) : !showPaywall ? (
                 <div className="flex flex-col items-center gap-3">
                   <button
                     onClick={() => setShowPaywall(true)}

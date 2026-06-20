@@ -96,6 +96,11 @@ function LoginForm() {
       .eq('id', data.user.id)
       .single()
 
+    // Om login startades från en specifik sida (t.ex. paywall på en rapport),
+    // gå tillbaka dit istället för standard-dashboarden.
+    const next = searchParams.get('next')
+    if (next) { router.push(next); return }
+
     const role = profile?.role
     if (role === 'superadmin') router.push('/admin')
     else if (role === 'brf_admin') router.push('/dashboard')
@@ -152,7 +157,8 @@ function LoginForm() {
       setLoading(false)
       return
     }
-    router.push('/dashboard')
+    const next = searchParams.get('next')
+    router.push(next || '/dashboard')
     setLoading(false)
   }
 
