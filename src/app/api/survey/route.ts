@@ -3,12 +3,16 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 import { calculateKPIs, kpiSetToArray } from '@/lib/kpi-calculator'
 import { parseBody, surveySubmitSchema } from '@/lib/validation'
 import { rateLimit } from '@/lib/rate-limit'
+import { resolveUser } from '@/lib/auth'
 import type { SurveyAnswer } from '@/types'
 
 export async function POST(req: NextRequest) {
   // Publik (token-baserad) inlämning – rate limit mot skräp-enkäter.
   const limited = rateLimit(req, 'survey', 10, 60_000)
   if (limited) return limited
+
+  // Inloggad användare (om någon). Anonyma token-inlämningar tillåts fortfarande.
+  const { userId, role } = await resolveUser(req)
 
   const parsed = parseBody(surveySubmitSchema, await req.json())
   if (!parsed.ok) return parsed.res
@@ -67,6 +71,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Kunde inte skapa enkäten' }, { status: 500 })
     }
     surveyId = survey.id
+
+    // Koppla BRF:en till den inloggade brf_admin så enkäten syns i
+    // "Mina rapporter". Superadmin behöver ingen koppling (ser allt).
+    // Idempotent: skapa bara om kopplingen saknas.
+    if (userId && role === 'brf_admin' && brf_name) {
+      const { data: existingLink } = await supabaseAdmin
+        .from('brf_admin_brfs')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('brf_base_name', brf_name)
+        .limit(1)
+
+      if (!existingLink || existingLink.length === 0) {
+        const { error: linkErr } = await supabaseAdmin
+          .from('brf_admin_brfs')
+          .insert({ user_id: userId, brf_base_name: brf_name })
+        if (linkErr) console.error('BRF-länk error:', linkErr)
+      }
+    }
   }
 
   // Idempotent: rensa ev. tidigare svar/KPI för enkäten innan nya sparas.
