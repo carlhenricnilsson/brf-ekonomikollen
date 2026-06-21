@@ -445,7 +445,7 @@ export default function ResultsPage() {
 
         {/* Paywall-sektion */}
         {!hasFullAccess && (
-          <div className="bg-gradient-to-b from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-2xl p-8 mb-12">
+          <div id="paywall" className="bg-gradient-to-b from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-2xl p-8 mb-12 scroll-mt-6">
             <div className="text-center">
               <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -473,7 +473,7 @@ export default function ResultsPage() {
               ) : !showPaywall ? (
                 <div className="flex flex-col items-center gap-3">
                   <button
-                    onClick={() => setShowPaywall(true)}
+                    onClick={() => { setShowPaywall(true); document.getElementById('paywall')?.scrollIntoView({ behavior: 'smooth' }) }}
                     className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-8 py-3 rounded-xl transition-colors"
                   >
                     Lås upp rapport
@@ -602,7 +602,7 @@ export default function ResultsPage() {
             <h2 className="font-bold text-white mb-2">AI-analys ingår i fullrapporten</h2>
             <p className="text-white/50 text-sm mb-4 max-w-md mx-auto">Personlig analys av föreningens ekonomi med rekommendationer, riskbedömning och framtidsutsikter.</p>
             <button
-              onClick={() => setShowPaywall(true)}
+              onClick={() => { setShowPaywall(true); document.getElementById('paywall')?.scrollIntoView({ behavior: 'smooth' }) }}
               className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors text-sm"
             >
               Lås upp hela rapporten – 5 995 kr inkl. moms
@@ -628,7 +628,7 @@ export default function ResultsPage() {
             <div className="text-center mt-4 relative z-20">
               <p className="text-white/50 text-sm mb-3">Lås upp för att se hela analysen med rekommendationer, framtidsutsikter och styrelsemötespunkter.</p>
               <button
-                onClick={() => setShowPaywall(true)}
+                onClick={() => { setShowPaywall(true); document.getElementById('paywall')?.scrollIntoView({ behavior: 'smooth' }) }}
                 className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors text-sm"
               >
                 Lås upp hela rapporten – 5 995 kr inkl. moms
