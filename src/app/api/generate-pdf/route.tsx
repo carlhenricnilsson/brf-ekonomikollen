@@ -78,23 +78,29 @@ function getLabel(light: string) {
   return 'Info'
 }
 
-// Trafikljus-emoji → färg. PDF-fonten (Helvetica) kan inte rendera emoji
-// (visas som skräp, t.ex. "=4"), så vi byter dem mot en färgad punkt.
-const DOT_COLOR_EMOJI: Record<string, string> = {
-  [String.fromCodePoint(0x1F534)]: '#f87171', // 🔴 röd
-  [String.fromCodePoint(0x1F7E1)]: '#facc15', // 🟡 gul
-  [String.fromCodePoint(0x1F7E2)]: '#4ade80', // 🟢 grön
+// Trafikljus-emoji i AI-texten kan PDF-fonten inte rendera (visas som skräp,
+// t.ex. "=4"). Vi byter dem mot en riktig färgad cirkel (View) i samma
+// storlek som trafikljusen på KPI-skalan.
+const TL_RED    = String.fromCodePoint(0x1F534)
+const TL_YELLOW = String.fromCodePoint(0x1F7E1)
+const TL_GREEN  = String.fromCodePoint(0x1F7E2)
+
+function lineDotColor(line: string): string | null {
+  if (line.includes(TL_RED))    return '#f87171'
+  if (line.includes(TL_YELLOW)) return '#facc15'
+  if (line.includes(TL_GREEN))  return '#4ade80'
+  return null
 }
 
-// Ersätter trafikljus-emoji i en textrad med en färgad punkt (•) i rätt färg.
-function withDots(text: string): React.ReactNode {
-  const parts = text.split(/(\u{1F534}|\u{1F7E1}|\u{1F7E2})/u)
-  if (parts.length === 1) return text
-  return parts.map((p, j) =>
-    DOT_COLOR_EMOJI[p]
-      ? <Text key={j} style={{ color: DOT_COLOR_EMOJI[p], fontFamily: 'Helvetica-Bold' }}>{' •'}</Text>
-      : p
-  )
+// Tar bort emoji (och ev. tomma "()" runt dem) samt markdown-fetstil.
+function stripEmoji(line: string): string {
+  return line
+    .replace(/\s*\(\s*(\u{1F534}|\u{1F7E1}|\u{1F7E2})\s*\)/gu, '')
+    .replace(/(\u{1F534}|\u{1F7E1}|\u{1F7E2})/gu, '')
+    .replace(/\*\*/g, '')
+    .replace(/^[#\-*]+\s*/, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
 }
 
 function renderAIText(text: string) {
@@ -102,13 +108,25 @@ function renderAIText(text: string) {
     if (/^[-*]{3,}$/.test(line.trim()))       return null
     if (/^\|[\s|:-]+\|$/.test(line.trim()))   return null
     if (line.trim() === '') return <Text key={i} style={{ fontSize: 2 }}> </Text>
-    if (line.startsWith('### ')) return <Text key={i} style={[s.aiH2, { fontSize: 11 }]}>{withDots(line.replace(/^###\s+/, ''))}</Text>
-    if (line.startsWith('## '))  return <Text key={i} style={s.aiH2}>{withDots(line.replace(/^##\s+/, ''))}</Text>
-    if (line.startsWith('# '))   return <Text key={i} style={[s.aiH2, { fontSize: 14 }]}>{withDots(line.replace(/^#\s+/, ''))}</Text>
+
+    // Rad med trafikljus-emoji → färgad cirkel + fet text
+    const dot = lineDotColor(line)
+    if (dot) {
+      return (
+        <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, marginBottom: 1 }}>
+          <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: dot, marginRight: 6 }} />
+          <Text style={[s.aiBody, { fontFamily: 'Helvetica-Bold', color: '#ffffff', flex: 1 }]}>{stripEmoji(line)}</Text>
+        </View>
+      )
+    }
+
+    if (line.startsWith('### ')) return <Text key={i} style={[s.aiH2, { fontSize: 11 }]}>{line.replace(/^###\s+/, '')}</Text>
+    if (line.startsWith('## '))  return <Text key={i} style={s.aiH2}>{line.replace(/^##\s+/, '')}</Text>
+    if (line.startsWith('# '))   return <Text key={i} style={[s.aiH2, { fontSize: 14 }]}>{line.replace(/^#\s+/, '')}</Text>
     if (line.startsWith('- ') || line.startsWith('* '))
-      return <Text key={i} style={[s.aiBody, { marginLeft: 10 }]}>{'• '}{withDots(line.replace(/^[-*]\s+/, '').replace(/\*\*/g, ''))}</Text>
+      return <Text key={i} style={[s.aiBody, { marginLeft: 10 }]}>{'• ' + line.replace(/^[-*]\s+/, '').replace(/\*\*/g, '')}</Text>
     if (line.includes('|')) return null
-    return <Text key={i} style={s.aiBody}>{withDots(line.replace(/\*\*/g, ''))}</Text>
+    return <Text key={i} style={s.aiBody}>{line.replace(/\*\*/g, '')}</Text>
   })
 }
 
