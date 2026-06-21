@@ -594,7 +594,21 @@ export default function ResultsPage() {
         )}
 
         {/* AI-analys – generera eller visa */}
-        {!hasFullAccess && aiAnalysis ? (
+        {!hasFullAccess ? (
+          !aiAnalysis ? (
+          /* Låst AI-teaser – obetalda får varken genereringsknapp eller innehåll */
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-12 text-center">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 text-sm font-bold mx-auto mb-4">AI</div>
+            <h2 className="font-bold text-white mb-2">AI-analys ingår i fullrapporten</h2>
+            <p className="text-white/50 text-sm mb-4 max-w-md mx-auto">Personlig analys av föreningens ekonomi med rekommendationer, riskbedömning och framtidsutsikter.</p>
+            <button
+              onClick={() => setShowPaywall(true)}
+              className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors text-sm"
+            >
+              Lås upp hela rapporten – 5 995 kr inkl. moms
+            </button>
+          </div>
+          ) : (
           /* Begränsad AI-förhandsgranskning */
           <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-12 relative overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
@@ -621,6 +635,7 @@ export default function ResultsPage() {
               </button>
             </div>
           </div>
+          )
         ) : !aiAnalysis ? (
           <div className="bg-blue-500/10 border border-blue-400/20 rounded-2xl p-8 text-center mb-12">
             <h2 className="text-xl font-bold mb-2">Vill ni ha en djupare analys?</h2>

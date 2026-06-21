@@ -43,7 +43,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Enkäten är inte tillgänglig' }, { status: 404 })
   }
 
-  // 2. Finns redan en analys? Tillåt om-generering endast för superadmin
+  // 2. Åtkomstgrind: AI-analysen är en BETALD deliverabel. Endast superadmin
+  //    eller den som betalat för enkäten får generera. Stoppar obetalda/
+  //    anonyma från att trigga det kostnadsbärande anropet OCH läcka innehåll.
+  const { userId, role } = await resolveUser(req)
+  let hasAccess = role === 'superadmin'
+  if (!hasAccess && userId) {
+    const { data: payment } = await supabaseAdmin
+      .from('payments')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('survey_id', surveyId)
+      .eq('status', 'completed')
+      .limit(1)
+    hasAccess = !!(payment && payment.length > 0)
+  }
+  if (!hasAccess) {
+    return NextResponse.json({ error: 'Kräver betald rapport' }, { status: 403 })
+  }
+
+  // 3. Finns redan en analys? Tillåt om-generering endast för superadmin
   //    (förhindrar upprepad budget-bränning; säljtratten genererar bara
   //    en gång eftersom UI:t döljer knappen när analys finns).
   const { data: existingAnalysis } = await supabaseAdmin
@@ -51,14 +70,11 @@ export async function POST(req: NextRequest) {
     .select('id')
     .eq('survey_id', surveyId)
     .limit(1)
-  if (existingAnalysis && existingAnalysis.length > 0) {
-    const { role } = await resolveUser(req)
-    if (role !== 'superadmin') {
-      return NextResponse.json(
-        { error: 'Analys finns redan för denna enkät' },
-        { status: 409 }
-      )
-    }
+  if (existingAnalysis && existingAnalysis.length > 0 && role !== 'superadmin') {
+    return NextResponse.json(
+      { error: 'Analys finns redan för denna enkät' },
+      { status: 409 }
+    )
   }
 
   // Hämta fritextsvar
