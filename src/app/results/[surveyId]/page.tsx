@@ -615,14 +615,14 @@ export default function ResultsPage() {
               <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 text-sm font-bold shrink-0">AI</div>
               <h2 className="font-bold text-white">AI-analys (förhandsgranskning)</h2>
             </div>
-            {/* Visa bara sammanfattningen */}
+            {/* Visa bara sammanfattningen som teaser – resten låst */}
             <div className="mb-4">
-              <MarkdownText text={aiAnalysis.split('\n## ').slice(0, 2).join('\n## ')} />
+              <MarkdownText text={aiAnalysis.split('\n## ').slice(0, 1).join('\n## ')} />
             </div>
             <div className="relative">
               <div className="h-32 bg-gradient-to-b from-transparent to-slate-950 absolute inset-x-0 bottom-0 z-10" />
               <div className="opacity-30 blur-[3px] select-none max-h-24 overflow-hidden">
-                <MarkdownText text={aiAnalysis.split('\n## ').slice(2, 3).join('\n## ')} />
+                <MarkdownText text={`## ${aiAnalysis.split('\n## ').slice(1, 2).join('\n## ')}`} />
               </div>
             </div>
             <div className="text-center mt-4 relative z-20">
