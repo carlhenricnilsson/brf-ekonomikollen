@@ -78,18 +78,37 @@ function getLabel(light: string) {
   return 'Info'
 }
 
+// Trafikljus-emoji → färg. PDF-fonten (Helvetica) kan inte rendera emoji
+// (visas som skräp, t.ex. "=4"), så vi byter dem mot en färgad punkt.
+const DOT_COLOR_EMOJI: Record<string, string> = {
+  [String.fromCodePoint(0x1F534)]: '#f87171', // 🔴 röd
+  [String.fromCodePoint(0x1F7E1)]: '#facc15', // 🟡 gul
+  [String.fromCodePoint(0x1F7E2)]: '#4ade80', // 🟢 grön
+}
+
+// Ersätter trafikljus-emoji i en textrad med en färgad punkt (•) i rätt färg.
+function withDots(text: string): React.ReactNode {
+  const parts = text.split(/(\u{1F534}|\u{1F7E1}|\u{1F7E2})/u)
+  if (parts.length === 1) return text
+  return parts.map((p, j) =>
+    DOT_COLOR_EMOJI[p]
+      ? <Text key={j} style={{ color: DOT_COLOR_EMOJI[p], fontFamily: 'Helvetica-Bold' }}>{' •'}</Text>
+      : p
+  )
+}
+
 function renderAIText(text: string) {
   return text.split('\n').map((line, i) => {
     if (/^[-*]{3,}$/.test(line.trim()))       return null
     if (/^\|[\s|:-]+\|$/.test(line.trim()))   return null
     if (line.trim() === '') return <Text key={i} style={{ fontSize: 2 }}> </Text>
-    if (line.startsWith('### ')) return <Text key={i} style={[s.aiH2, { fontSize: 11 }]}>{line.replace(/^###\s+/, '')}</Text>
-    if (line.startsWith('## '))  return <Text key={i} style={s.aiH2}>{line.replace(/^##\s+/, '')}</Text>
-    if (line.startsWith('# '))   return <Text key={i} style={[s.aiH2, { fontSize: 14 }]}>{line.replace(/^#\s+/, '')}</Text>
+    if (line.startsWith('### ')) return <Text key={i} style={[s.aiH2, { fontSize: 11 }]}>{withDots(line.replace(/^###\s+/, ''))}</Text>
+    if (line.startsWith('## '))  return <Text key={i} style={s.aiH2}>{withDots(line.replace(/^##\s+/, ''))}</Text>
+    if (line.startsWith('# '))   return <Text key={i} style={[s.aiH2, { fontSize: 14 }]}>{withDots(line.replace(/^#\s+/, ''))}</Text>
     if (line.startsWith('- ') || line.startsWith('* '))
-      return <Text key={i} style={[s.aiBody, { marginLeft: 10 }]}>{'• ' + line.replace(/^[-*]\s+/, '').replace(/\*\*/g, '')}</Text>
+      return <Text key={i} style={[s.aiBody, { marginLeft: 10 }]}>{'• '}{withDots(line.replace(/^[-*]\s+/, '').replace(/\*\*/g, ''))}</Text>
     if (line.includes('|')) return null
-    return <Text key={i} style={s.aiBody}>{line.replace(/\*\*/g, '')}</Text>
+    return <Text key={i} style={s.aiBody}>{withDots(line.replace(/\*\*/g, ''))}</Text>
   })
 }
 
