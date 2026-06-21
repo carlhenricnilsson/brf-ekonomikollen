@@ -95,6 +95,16 @@ export async function POST(req: NextRequest) {
     mode: 'payment',
     payment_method_types: ['card'],
     automatic_tax: { enabled: true }, // Stripe Tax är aktiverat – beräknar 25% SE moms automatiskt
+    // Genererar ett itemiserat kvitto/faktura med momsrad ("varav moms")
+    // som mailas till kunden. Utan detta skickas bara ett enkelt
+    // betalningskvitto utan tydlig momsspecifikation.
+    invoice_creation: {
+      enabled: true,
+      invoice_data: {
+        description: 'BRF Ekonomikollen – analysrapport enligt BFNAR 2023:1',
+        footer: 'Priset är inkl. 25% moms.',
+      },
+    },
     line_items: [
       {
         price_data: {
